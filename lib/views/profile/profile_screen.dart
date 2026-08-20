@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -72,7 +73,7 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 10),
 
               const Text(
-                'Halaman profil pengguna Aurum.',
+                'Kelola informasi dan pengaturan akun Aurum Anda.',
                 style: TextStyle(fontSize: 14, color: Color(0xFF777777)),
               ),
 
@@ -83,12 +84,10 @@ class ProfileScreen extends StatelessWidget {
               // ==========================================
               Container(
                 width: double.infinity,
-
                 padding: const EdgeInsets.all(20),
 
                 decoration: BoxDecoration(
                   color: Colors.white,
-
                   borderRadius: BorderRadius.circular(20),
 
                   boxShadow: [
@@ -109,8 +108,8 @@ class ProfileScreen extends StatelessWidget {
                       width: 90,
                       height: 90,
 
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFE5CC),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFE5CC),
                         shape: BoxShape.circle,
                       ),
 
@@ -145,7 +144,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 25),
 
               // ==========================================
               // INFORMASI AKUN
@@ -166,7 +165,6 @@ class ProfileScreen extends StatelessWidget {
 
                 decoration: BoxDecoration(
                   color: Colors.white,
-
                   borderRadius: BorderRadius.circular(20),
 
                   boxShadow: [
@@ -208,64 +206,129 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 25),
 
               // ==========================================
-              // BUTTON EDIT PROFIL
+              // PENGATURAN
               // ==========================================
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-
-                child: OutlinedButton(
-                  onPressed: () {
-                    // Fitur edit profil akan dibuat nanti.
-                  },
-
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFF28C28),
-
-                    side: const BorderSide(color: Color(0xFFF28C28)),
-
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-
-                  child: const Text(
-                    'Edit Profil',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
+              const Text(
+                'Pengaturan',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF3D2B1F),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
 
               // ==========================================
-              // BUTTON LOGOUT
+              // MENU PENGATURAN
               // ==========================================
-              SizedBox(
+              Container(
                 width: double.infinity,
-                height: 52,
 
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Fitur logout akan dibuat nanti.
-                  },
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
 
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.red,
-                    elevation: 0,
-
-                    side: const BorderSide(color: Colors.redAccent),
-
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
+                  ],
+                ),
 
-                  child: const Text(
-                    'Logout',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
+                child: Column(
+                  children: [
+                    // ======================================
+                    // UBAH PROFIL
+                    // ======================================
+                    _buildMenuItem(
+                      icon: Icons.edit_outlined,
+                      title: 'Ubah Profil',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Fitur ubah profil akan segera tersedia.',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const Divider(height: 1, indent: 20, endIndent: 20),
+
+                    // ======================================
+                    // PENGATURAN APLIKASI
+                    // ======================================
+                    _buildMenuItem(
+                      icon: Icons.settings_outlined,
+                      title: 'Pengaturan Aplikasi',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Fitur pengaturan aplikasi akan segera tersedia.',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const Divider(height: 1, indent: 20, endIndent: 20),
+
+                    // ======================================
+                    // BANTUAN
+                    // ======================================
+                    _buildMenuItem(
+                      icon: Icons.help_outline_rounded,
+                      title: 'Bantuan',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Halaman bantuan akan segera tersedia.',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const Divider(height: 1, indent: 20, endIndent: 20),
+
+                    // ======================================
+                    // KEAMANAN AKUN
+                    // ======================================
+                    _buildMenuItem(
+                      icon: Icons.security_outlined,
+                      title: 'Keamanan Akun',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Pengaturan keamanan akun akan segera tersedia.',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const Divider(height: 1, indent: 20, endIndent: 20),
+
+                    // ======================================
+                    // KELUAR
+                    // ======================================
+                    _buildMenuItem(
+                      icon: Icons.logout_rounded,
+                      title: 'Keluar',
+                      iconColor: Colors.red,
+                      titleColor: Colors.red,
+                      onTap: () {
+                        _showLogoutDialog(context);
+                      },
+                    ),
+                  ],
                 ),
               ),
 
@@ -333,6 +396,149 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // ==================================================
+  // MENU ITEM
+  // ==================================================
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color iconColor = const Color(0xFFF28C28),
+    Color titleColor = const Color(0xFF3D2B1F),
+  }) {
+    return Material(
+      color: Colors.transparent,
+
+      child: InkWell(
+        onTap: onTap,
+
+        borderRadius: BorderRadius.circular(20),
+
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+
+          child: Row(
+            children: [
+              // ======================================
+              // ICON
+              // ======================================
+              Container(
+                width: 44,
+                height: 44,
+
+                decoration: BoxDecoration(
+                  color: iconColor == Colors.red
+                      ? Colors.red.withOpacity(0.08)
+                      : const Color(0xFFFFE5CC),
+
+                  borderRadius: BorderRadius.circular(12),
+                ),
+
+                child: Icon(icon, size: 22, color: iconColor),
+              ),
+
+              const SizedBox(width: 14),
+
+              // ======================================
+              // TITLE
+              // ======================================
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: titleColor,
+                  ),
+                ),
+              ),
+
+              // ======================================
+              // ARROW
+              // ======================================
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 24,
+                color: iconColor == Colors.red
+                    ? Colors.red.withOpacity(0.7)
+                    : const Color(0xFFAAAAAA),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==================================================
+  // LOGOUT DIALOG
+  // ==================================================
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+
+          title: const Text(
+            'Keluar dari Akun?',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3D2B1F),
+            ),
+          ),
+
+          content: const Text(
+            'Apakah Anda yakin ingin keluar dari akun Aurum?',
+            style: TextStyle(fontSize: 14, color: Color(0xFF777777)),
+          ),
+
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+
+              child: const Text(
+                'Batal',
+                style: TextStyle(color: Color(0xFF777777)),
+              ),
+            ),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                elevation: 0,
+
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+
+              child: const Text('Keluar'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
