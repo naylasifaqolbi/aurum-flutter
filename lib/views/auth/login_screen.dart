@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../dashboard/landing_page.dart';
+import '../../navigation/main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,11 +27,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     // Untuk sementara login belum menggunakan database/API.
-    // Tombol masuk langsung menuju Dashboard.
+    // Setelah login langsung masuk ke halaman utama aplikasi.
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const LandingPage()),
+      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
     );
   }
 
