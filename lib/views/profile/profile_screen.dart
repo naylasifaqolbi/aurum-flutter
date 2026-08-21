@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+
 import '../auth/login_screen.dart';
+import 'edit_profile_screen.dart';
+import 'app_settings_screen.dart';
+import 'help_screen.dart';
+import 'account_security_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -101,9 +106,7 @@ class ProfileScreen extends StatelessWidget {
 
                 child: Column(
                   children: [
-                    // ======================================
                     // FOTO PROFIL
-                    // ======================================
                     Container(
                       width: 90,
                       height: 90,
@@ -122,9 +125,7 @@ class ProfileScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // ======================================
                     // NAMA
-                    // ======================================
                     const Text(
                       'Rosalinda',
                       style: TextStyle(
@@ -220,7 +221,7 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 15),
 
               // ==========================================
-              // MENU PENGATURAN
+              // MENU
               // ==========================================
               Container(
                 width: double.infinity,
@@ -247,11 +248,10 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.edit_outlined,
                       title: 'Ubah Profil',
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Fitur ubah profil akan segera tersedia.',
-                            ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfileScreen(),
                           ),
                         );
                       },
@@ -266,11 +266,10 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.settings_outlined,
                       title: 'Pengaturan Aplikasi',
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Fitur pengaturan aplikasi akan segera tersedia.',
-                            ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AppSettingsScreen(),
                           ),
                         );
                       },
@@ -285,11 +284,10 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.help_outline_rounded,
                       title: 'Bantuan',
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Halaman bantuan akan segera tersedia.',
-                            ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HelpScreen(),
                           ),
                         );
                       },
@@ -304,11 +302,10 @@ class ProfileScreen extends StatelessWidget {
                       icon: Icons.security_outlined,
                       title: 'Keamanan Akun',
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Pengaturan keamanan akun akan segera tersedia.',
-                            ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AccountSecurityScreen(),
                           ),
                         );
                       },
@@ -423,9 +420,6 @@ class ProfileScreen extends StatelessWidget {
 
           child: Row(
             children: [
-              // ======================================
-              // ICON
-              // ======================================
               Container(
                 width: 44,
                 height: 44,
@@ -443,9 +437,6 @@ class ProfileScreen extends StatelessWidget {
 
               const SizedBox(width: 14),
 
-              // ======================================
-              // TITLE
-              // ======================================
               Expanded(
                 child: Text(
                   title,
@@ -457,9 +448,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
 
-              // ======================================
-              // ARROW
-              // ======================================
               Icon(
                 Icons.chevron_right_rounded,
                 size: 24,
