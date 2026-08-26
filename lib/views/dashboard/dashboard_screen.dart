@@ -1,24 +1,47 @@
 import 'package:flutter/material.dart';
+import 'physical_gold_formula_screen.dart';
+import 'pivot_formula_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  // ============================================================
+  // CALLBACK KE MENU KALKULATOR
+  // ============================================================
+
+  final VoidCallback? onGoToCalculator;
+
+  const DashboardScreen({super.key, this.onGoToCalculator});
+
+  // ============================================================
+  // COLOR
+  // ============================================================
+
+  static const Color backgroundColor = Color(0xFFFFF8F0);
+  static const Color orangeColor = Color(0xFFF28C28);
+  static const Color darkBrown = Color(0xFF3D2B1F);
+  static const Color lightOrange = Color(0xFFFFE5CC);
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F0),
+      backgroundColor: backgroundColor,
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          physics: const BouncingScrollPhysics(),
+
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
 
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-              // ==========================================
+              // ==================================================
               // HEADER
-              // ==========================================
+              // ==================================================
               Row(
                 children: [
                   Image.asset(
@@ -35,7 +58,7 @@ class DashboardScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFF28C28),
+                      color: orangeColor,
                       letterSpacing: 1,
                     ),
                   ),
@@ -44,6 +67,7 @@ class DashboardScreen extends StatelessWidget {
 
                   IconButton(
                     onPressed: () {},
+
                     icon: const Icon(
                       Icons.notifications_none_rounded,
                       size: 28,
@@ -53,140 +77,147 @@ class DashboardScreen extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 28),
 
-              // ==========================================
-              // TITLE
-              // ==========================================
+              // ==================================================
+              // WELCOME
+              // ==================================================
               const Text(
-                'Selamat Datang di Aurum',
+                'Selamat datang',
                 style: TextStyle(
-                  fontSize: 26,
+                  fontSize: 17,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              const SizedBox(height: 5),
+
+              const Text(
+                'Rosalinda',
+                style: TextStyle(
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF3D2B1F),
+                  color: darkBrown,
+                ),
+              ),
+
+              const SizedBox(height: 5),
+
+              const Text(
+                'Semangat bekerja hari ini!',
+                style: TextStyle(fontSize: 15, color: Colors.black54),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ==================================================
+              // UPDATE DATA HARGA EMAS
+              // ==================================================
+              const Text(
+                'UPDATE DATA HARGA EMAS TERBARU',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: darkBrown,
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // ==================================================
+              // LGD DAILY CARD
+              // ==================================================
+              _buildGoldPriceCard(context),
+
+              const SizedBox(height: 32),
+
+              // ==================================================
+              // KELOLA DAN ANALISIS
+              // ==================================================
+              _buildAboutAurumCard(context),
+
+              const SizedBox(height: 34),
+
+              // ==================================================
+              // MENGENAL PERHITUNGAN
+              // ==================================================
+              const Text(
+                'Mengenal Perhitungan AURUM',
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.bold,
+                  color: darkBrown,
                 ),
               ),
 
               const SizedBox(height: 8),
 
               const Text(
-                'Aplikasi untuk membantu menghitung '
-                'emas fisik dan Pivot Point dengan mudah.',
+                'Dua metode perhitungan utama yang '
+                'tersedia di AURUM.',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 14,
                   color: Colors.black54,
                   height: 1.5,
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 18),
 
-              // ==========================================
-              // MENU KALKULATOR
-              // ==========================================
-              const Text(
-                'Menu Kalkulator',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF3D2B1F),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              _buildCalculatorCard(
+              // ==================================================
+              // EMAS FISIK
+              // ==================================================
+              _buildCalculationCard(
+                context: context,
                 icon: Icons.monetization_on_outlined,
-                title: 'Kalkulator Emas Fisik',
+                title: 'Emas Fisik',
                 description:
-                    'Hitung keuntungan atau kerugian '
-                    'dari transaksi emas fisik.',
-                onTap: () {},
+                    'Hitung keuntungan transaksi '
+                    'emas berdasarkan data yang '
+                    'kamu masukkan.',
+
+                // ==============================================
+                // NAVIGASI KE RUMUS EMAS FISIK
+                // ==============================================
+                onFormulaTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PhysicalGoldFormulaScreen(),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 16),
 
-              _buildCalculatorCard(
-                icon: Icons.show_chart,
-                title: 'Kalkulator Pivot Point',
+              // ==================================================
+              // PIVOT POINT
+              // ==================================================
+              _buildCalculationCard(
+                context: context,
+                icon: Icons.show_chart_rounded,
+                title: 'Pivot Point',
                 description:
-                    'Hitung Pivot Point berdasarkan '
-                    'harga High, Low, dan Close.',
-                onTap: () {},
+                    'Tentukan indikasi BUY atau '
+                    'SELL berdasarkan nilai Pivot '
+                    'Point.',
+
+                // ==============================================
+                // PIVOT MASIH COMING SOON
+                // ==============================================
+                onFormulaTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PivotFormulaScreen(),
+                    ),
+                  );
+                },
               ),
 
-              const SizedBox(height: 30),
-
-              // ==========================================
-              // INFORMASI
-              // ==========================================
-              const Text(
-                'Informasi',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF3D2B1F),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              Container(
-                width: double.infinity,
-
-                padding: const EdgeInsets.all(20),
-
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Color(0xFFF28C28),
-                      size: 30,
-                    ),
-
-                    SizedBox(height: 12),
-
-                    Text(
-                      'Tentang Aurum',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3D2B1F),
-                      ),
-                    ),
-
-                    SizedBox(height: 8),
-
-                    Text(
-                      'Aurum membantu pengguna melakukan '
-                      'perhitungan emas fisik dan Pivot Point '
-                      'dengan lebih mudah, cepat, dan praktis.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -194,86 +225,486 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCalculatorCard({
-    required IconData icon,
-    required String title,
-    required String description,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
+  // ============================================================
+  // GOLD PRICE CARD
+  // ============================================================
 
-      child: Container(
-        width: double.infinity,
+  Widget _buildGoldPriceCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
 
-        padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
 
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
 
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: BorderRadius.circular(20),
 
-        child: Row(
-          children: [
-            Container(
-              width: 55,
-              height: 55,
+        border: Border.all(color: const Color(0xFFFFE0C2), width: 1),
 
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFE5CC),
-                borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
+        children: [
+          // ======================================================
+          // LGD DAILY HEADER
+          // ======================================================
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+
+                decoration: BoxDecoration(
+                  color: lightOrange,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+
+                child: const Icon(
+                  Icons.trending_up_rounded,
+                  color: orangeColor,
+                  size: 27,
+                ),
               ),
 
-              child: Icon(icon, color: const Color(0xFFF28C28), size: 30),
-            ),
+              const SizedBox(width: 12),
 
-            const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'LGD Daily',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: darkBrown,
+                      ),
+                    ),
 
-                children: [
+                    SizedBox(height: 4),
+
+                    Text(
+                      '21 Aug 2026',
+                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F7EC),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+
+                child: const Text(
+                  'LATEST',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2E8B57),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 22),
+
+          // ======================================================
+          // PRICE DATA
+          // ======================================================
+          Row(
+            children: [
+              Expanded(
+                child: _buildPriceItem(label: 'OPEN', value: '4524.00'),
+              ),
+
+              Expanded(
+                child: _buildPriceItem(label: 'HIGH', value: '4632.10'),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildPriceItem(label: 'LOW', value: '4508.97'),
+              ),
+
+              Expanded(
+                child: _buildPriceItem(label: 'CLOSE', value: '4610.81'),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 22),
+
+          // ======================================================
+          // HISTORICAL DATA
+          // ======================================================
+          GestureDetector(
+            onTap: () {
+              _showComingSoon(context);
+            },
+
+            child: Container(
+              width: double.infinity,
+
+              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 15),
+
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E7),
+
+                borderRadius: BorderRadius.circular(12),
+
+                border: Border.all(color: const Color(0xFFFFDFC0)),
+              ),
+
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+
+                children: const [
                   Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF3D2B1F),
+                    'Lihat Historical Data',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: orangeColor,
                     ),
                   ),
 
-                  const SizedBox(height: 6),
+                  SizedBox(width: 7),
 
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
-                      height: 1.4,
-                    ),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: orangeColor,
                   ),
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            const SizedBox(width: 8),
+  // ============================================================
+  // PRICE ITEM
+  // ============================================================
 
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 18,
-              color: Color(0xFFF28C28),
-            ),
-          ],
+  Widget _buildPriceItem({required String label, required String value}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+
+      children: [
+        Text(
+          label,
+
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.black45,
+            letterSpacing: 0.8,
+          ),
         ),
+
+        const SizedBox(height: 5),
+
+        Text(
+          value,
+
+          style: const TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.bold,
+            color: darkBrown,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // ABOUT AURUM CARD
+  // ============================================================
+
+  Widget _buildAboutAurumCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+
+      padding: const EdgeInsets.all(22),
+
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFEAD6),
+
+        borderRadius: BorderRadius.circular(22),
+
+        border: Border.all(color: const Color(0xFFFFD4AD), width: 1),
+
+        boxShadow: [
+          BoxShadow(
+            color: orangeColor.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
+        children: [
+          // ======================================================
+          // TITLE
+          // ======================================================
+          const Text(
+            'Kelola dan Analisis Emasmu',
+
+            style: TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.bold,
+              color: darkBrown,
+              height: 1.2,
+            ),
+          ),
+
+          const SizedBox(height: 2),
+
+          const Text(
+            'dengan Lebih Mudah',
+
+            style: TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.bold,
+              color: orangeColor,
+              height: 1.2,
+            ),
+          ),
+
+          const SizedBox(height: 13),
+
+          const Text(
+            'Aurum membantu kamu menghitung '
+            'nilai dan keuntungan emas fisik serta '
+            'menganalisis pergerakan harga '
+            'menggunakan Pivot Point.',
+
+            style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.6),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ======================================================
+          // BUTTON MULAI MENGHITUNG
+          // ======================================================
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+
+            child: ElevatedButton(
+              onPressed: onGoToCalculator,
+
+              style: ElevatedButton.styleFrom(
+                backgroundColor: orangeColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+
+                children: const [
+                  Text(
+                    'Mulai Menghitung Sekarang',
+
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+
+                  SizedBox(width: 8),
+
+                  Icon(Icons.arrow_forward_rounded, size: 19),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // CALCULATION CARD
+  // ============================================================
+
+  Widget _buildCalculationCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String description,
+
+    // ==========================================================
+    // CALLBACK LIHAT RUMUS
+    // ==========================================================
+    required VoidCallback onFormulaTap,
+  }) {
+    return Container(
+      width: double.infinity,
+
+      padding: const EdgeInsets.all(20),
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+
+        borderRadius: BorderRadius.circular(20),
+
+        border: Border.all(color: const Color(0xFFFFE0C2), width: 1),
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
+        children: [
+          // ======================================================
+          // ICON + TITLE
+          // ======================================================
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+
+                decoration: BoxDecoration(
+                  color: lightOrange,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+
+                child: Icon(icon, color: orangeColor, size: 29),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Text(
+                  title,
+
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: darkBrown,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // ======================================================
+          // DESCRIPTION
+          // ======================================================
+          Text(
+            description,
+
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+              height: 1.5,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // ======================================================
+          // LIHAT RUMUS
+          // ======================================================
+          GestureDetector(
+            onTap: onFormulaTap,
+
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+
+              children: const [
+                Icon(Icons.functions_rounded, size: 17, color: orangeColor),
+
+                SizedBox(width: 6),
+
+                Text(
+                  'Lihat Rumus',
+
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: orangeColor,
+                  ),
+                ),
+
+                SizedBox(width: 5),
+
+                Icon(Icons.arrow_forward_ios, size: 11, color: orangeColor),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // COMING SOON
+  // ============================================================
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text(
+          'Fitur ini akan segera tersedia.',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+
+        backgroundColor: darkBrown,
+
+        behavior: SnackBarBehavior.floating,
+
+        margin: const EdgeInsets.all(16),
+
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+
+        duration: const Duration(seconds: 2),
       ),
     );
   }

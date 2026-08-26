@@ -9,15 +9,17 @@ class PivotCalculator extends StatefulWidget {
 }
 
 class _PivotCalculatorState extends State<PivotCalculator> {
-  // ==================================================
+  // ============================================================
   // FORM KEY
-  // ==================================================
+  // ============================================================
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  // ==================================================
+  // ============================================================
   // CONTROLLER INPUT
-  // ==================================================
+  // ============================================================
+
+  final TextEditingController _openController = TextEditingController();
 
   final TextEditingController _highController = TextEditingController();
 
@@ -25,8 +27,13 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
   final TextEditingController _closeController = TextEditingController();
 
+  // ============================================================
+  // DISPOSE
+  // ============================================================
+
   @override
   void dispose() {
+    _openController.dispose();
     _highController.dispose();
     _lowController.dispose();
     _closeController.dispose();
@@ -34,201 +41,175 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     super.dispose();
   }
 
-  // ==================================================
-  // TOMBOL HITUNG
-  // ==================================================
+  // ============================================================
+  // HITUNG PIVOT
+  // ============================================================
 
   void _hitung() {
-    // ================================================
-    // VALIDASI FORM
-    // ================================================
+    // ==========================================================
+    // VALIDASI
+    // ==========================================================
 
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    // ================================================
-    // KONVERSI INPUT MENJADI DOUBLE
-    // ================================================
+    // ==========================================================
+    // KONVERSI INPUT
+    // ==========================================================
 
-    final double high = double.parse(_highController.text.trim());
+    final double open = double.parse(
+      _openController.text.trim().replaceAll(',', '.'),
+    );
 
-    final double low = double.parse(_lowController.text.trim());
+    final double high = double.parse(
+      _highController.text.trim().replaceAll(',', '.'),
+    );
 
-    final double close = double.parse(_closeController.text.trim());
+    final double low = double.parse(
+      _lowController.text.trim().replaceAll(',', '.'),
+    );
 
-    // ================================================
-    // PIVOT POINT (PP)
+    final double close = double.parse(
+      _closeController.text.trim().replaceAll(',', '.'),
+    );
+
+    // ==========================================================
+    // PIVOT POINT
     //
     // PP = (High + Low + Close) / 3
-    // ================================================
+    // ==========================================================
 
     final double pp = (high + low + close) / 3;
 
-    // ================================================
+    // ==========================================================
     // RANGE
-    //
-    // High - Low
-    // ================================================
+    // ==========================================================
 
     final double range = high - low;
 
-    // ==================================================
+    // ==========================================================
     // RESISTANCE
-    // ==================================================
+    // ==========================================================
 
-    // ================================================
     // R4
-    //
-    // PP + (High - Low) × 3
-    // ================================================
-
+    // PP + (High - Low) x 3
     final double r4 = pp + (range * 3);
 
-    // ================================================
     // R3
-    //
-    // PP + (High - Low) × 2
-    // ================================================
-
+    // PP + (High - Low) x 2
     final double r3 = pp + (range * 2);
 
-    // ================================================
     // R2
-    //
     // PP + (High - Low)
-    // ================================================
-
     final double r2 = pp + range;
 
-    // ================================================
     // R1
-    //
-    // 2 × PP - High
-    // ================================================
-
+    // 2 x PP - High
     final double r1 = (2 * pp) - high;
 
-    // ==================================================
+    // ==========================================================
     // SUPPORT
-    // ==================================================
+    // ==========================================================
 
-    // ================================================
     // S1
-    //
-    // 2 × PP - High
-    // ================================================
-
+    // 2 x PP - High
     final double s1 = (2 * pp) - high;
 
-    // ================================================
     // S2
-    //
     // PP - (High - Low)
-    // ================================================
-
     final double s2 = pp - range;
 
-    // ================================================
     // S3
-    //
-    // PP - (High - Low) × 2
-    // ================================================
-
+    // PP - (High - Low) x 2
     final double s3 = pp - (range * 2);
 
-    // ================================================
     // S4
-    //
-    // PP - (High - Low) × 3
-    // ================================================
-
+    // PP - (High - Low) x 3
     final double s4 = pp - (range * 3);
 
-    // ==================================================
-    // MIDPOINT
-    // ==================================================
+    // ==========================================================
+    // MIDPOINT RESISTANCE
+    // ==========================================================
 
-    // ================================================
-    // MIDPOINT R4 - R3
-    // ================================================
-
+    // Midpoint R4 - R3
     final double midpointR4R3 = (r4 + r3) / 2;
 
-    // ================================================
-    // MIDPOINT R3 - R2
-    // ================================================
-
+    // Midpoint R3 - R2
     final double midpointR3R2 = (r3 + r2) / 2;
 
-    // ================================================
-    // MIDPOINT R2 - R1
-    // ================================================
-
+    // Midpoint R2 - R1
     final double midpointR2R1 = (r2 + r1) / 2;
 
-    // ================================================
-    // MIDPOINT PP - R1
-    // ================================================
-
+    // Midpoint PP - R1
     final double midpointPPR1 = (pp + r1) / 2;
 
-    // ================================================
-    // MIDPOINT PP - S1
-    // ================================================
+    // ==========================================================
+    // MIDPOINT SUPPORT
+    // ==========================================================
 
+    // Midpoint PP - S1
     final double midpointPPS1 = (pp + s1) / 2;
 
-    // ================================================
-    // MIDPOINT S1 - S2
-    // ================================================
-
+    // Midpoint S1 - S2
     final double midpointS1S2 = (s1 + s2) / 2;
 
-    // ================================================
-    // MIDPOINT S2 - S3
-    // ================================================
-
+    // Midpoint S2 - S3
     final double midpointS2S3 = (s2 + s3) / 2;
 
-    // ================================================
-    // MIDPOINT S3 - S4
-    // ================================================
-
+    // Midpoint S3 - S4
     final double midpointS3S4 = (s3 + s4) / 2;
 
-    // ================================================
-    // PINDAH KE HALAMAN HASIL
-    // ================================================
+    // ==========================================================
+    // INDIKASI
+    // ==========================================================
+
+    final String indication = open < pp ? 'BUY' : 'SELL';
+
+    // ==========================================================
+    // PINDAH KE HASIL
+    // ==========================================================
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PivotResult(
+          open: open,
           high: high,
           low: low,
           close: close,
+
           pp: pp,
+
           r1: r1,
           r2: r2,
           r3: r3,
           r4: r4,
+
           s1: s1,
           s2: s2,
           s3: s3,
           s4: s4,
+
           midpointR4R3: midpointR4R3,
           midpointR3R2: midpointR3R2,
           midpointR2R1: midpointR2R1,
           midpointPPR1: midpointPPR1,
+
           midpointPPS1: midpointPPS1,
           midpointS1S2: midpointS1S2,
           midpointS2S3: midpointS2S3,
           midpointS3S4: midpointS3S4,
+
+          indication: indication,
         ),
       ),
     );
   }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -237,6 +218,8 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
 
           child: Form(
@@ -246,9 +229,9 @@ class _PivotCalculatorState extends State<PivotCalculator> {
               crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
-                // ==========================================
+                // ==================================================
                 // HEADER
-                // ==========================================
+                // ==================================================
                 Row(
                   children: [
                     Image.asset(
@@ -273,9 +256,7 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                     const Spacer(),
 
                     IconButton(
-                      onPressed: () {
-                        // Fitur notifikasi akan dibuat nanti.
-                      },
+                      onPressed: () {},
 
                       icon: const Icon(
                         Icons.notifications_none_rounded,
@@ -288,9 +269,9 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
                 const SizedBox(height: 35),
 
-                // ==========================================
+                // ==================================================
                 // TITLE
-                // ==========================================
+                // ==================================================
                 const Text(
                   'Pivot Point',
                   style: TextStyle(
@@ -303,7 +284,7 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                 const SizedBox(height: 8),
 
                 const Text(
-                  'Masukkan harga High, Low, dan Close '
+                  'Masukkan data Open, High, Low, dan Close '
                   'untuk menghitung Pivot Point.',
                   style: TextStyle(
                     fontSize: 14,
@@ -314,9 +295,25 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
                 const SizedBox(height: 30),
 
-                // ==========================================
-                // HARGA HIGH
-                // ==========================================
+                // ==================================================
+                // OPEN
+                // ==================================================
+                _buildInputLabel('Harga Open'),
+
+                const SizedBox(height: 8),
+
+                _buildInputField(
+                  controller: _openController,
+                  hintText: 'Masukkan harga open',
+                  icon: Icons.radio_button_checked_rounded,
+                  errorMessage: 'Harga Open wajib diisi',
+                ),
+
+                const SizedBox(height: 20),
+
+                // ==================================================
+                // HIGH
+                // ==================================================
                 _buildInputLabel('Harga High'),
 
                 const SizedBox(height: 8),
@@ -330,9 +327,9 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
                 const SizedBox(height: 20),
 
-                // ==========================================
-                // HARGA LOW
-                // ==========================================
+                // ==================================================
+                // LOW
+                // ==================================================
                 _buildInputLabel('Harga Low'),
 
                 const SizedBox(height: 8),
@@ -346,9 +343,9 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
                 const SizedBox(height: 20),
 
-                // ==========================================
-                // HARGA CLOSE
-                // ==========================================
+                // ==================================================
+                // CLOSE
+                // ==================================================
                 _buildInputLabel('Harga Close'),
 
                 const SizedBox(height: 8),
@@ -362,9 +359,9 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
                 const SizedBox(height: 32),
 
-                // ==========================================
+                // ==================================================
                 // BUTTON HITUNG
-                // ==========================================
+                // ==================================================
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -411,13 +408,14 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     );
   }
 
-  // ==================================================
+  // ============================================================
   // LABEL INPUT
-  // ==================================================
+  // ============================================================
 
   Widget _buildInputLabel(String label) {
     return Text(
       label,
+
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
@@ -426,9 +424,9 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     );
   }
 
-  // ==================================================
+  // ============================================================
   // INPUT FIELD
-  // ==================================================
+  // ============================================================
 
   Widget _buildInputField({
     required TextEditingController controller,
@@ -441,12 +439,17 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
 
-      // ================================================
-      // VALIDASI
-      // ================================================
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return errorMessage;
+        }
+
+        final double? number = double.tryParse(
+          value.trim().replaceAll(',', '.'),
+        );
+
+        if (number == null) {
+          return 'Masukkan angka yang valid';
         }
 
         return null;
@@ -463,41 +466,26 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
         fillColor: Colors.white,
 
-        // ==============================================
-        // BORDER NORMAL
-        // ==============================================
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFFE8E8E8)),
         ),
 
-        // ==============================================
-        // BORDER TIDAK FOKUS
-        // ==============================================
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFFE8E8E8)),
         ),
 
-        // ==============================================
-        // BORDER FOKUS
-        // ==============================================
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFFF28C28), width: 1.5),
         ),
 
-        // ==============================================
-        // BORDER ERROR
-        // ==============================================
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Colors.red),
         ),
 
-        // ==============================================
-        // BORDER ERROR + FOKUS
-        // ==============================================
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Colors.red, width: 1.5),

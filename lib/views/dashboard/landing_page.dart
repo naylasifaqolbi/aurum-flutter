@@ -1,312 +1,231 @@
 import 'package:flutter/material.dart';
 
-import 'dashboard_screen.dart';
+import '../calculator/physical_gold_calculator.dart';
+import '../calculator/pivot_calculator.dart';
 
-class LandingPage extends StatefulWidget {
-  const LandingPage({super.key});
+class CalculatorMenuScreen extends StatefulWidget {
+  const CalculatorMenuScreen({super.key});
 
   @override
-  State<LandingPage> createState() => _LandingPageState();
+  State<CalculatorMenuScreen> createState() => _CalculatorMenuScreenState();
 }
 
-class _LandingPageState extends State<LandingPage> {
-  int _selectedIndex = 0;
+class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
+  Widget? _selectedCalculator;
 
-  void _goToDashboard() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const DashboardScreen()),
-    );
-  }
-
-  void _onNavbarTap(int index) {
+  void _openCalculator(Widget calculator) {
     setState(() {
-      _selectedIndex = index;
+      _selectedCalculator = calculator;
     });
-
-    // Untuk sementara:
-    // hanya halaman Beranda yang aktif.
-    //
-    // Halaman Kalkulator, Riwayat, dan Profil
-    // akan dibuat pada tahap berikutnya.
-    if (index == 1) {
-      _goToDashboard();
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedCalculator != null) {
+      return _selectedCalculator!;
+    }
+
+    return _buildCalculatorMenu();
+  }
+
+  Widget _buildCalculatorMenu() {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFFF8F0),
 
       body: SafeArea(
-        child: Column(
-          children: [
-            // ==========================================
-            // CONTENT
-            // ==========================================
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
 
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
 
-                  children: [
-                    const SizedBox(height: 16),
+            children: [
+              // ================================================
+              // HEADER
+              // ================================================
+              Row(
+                children: [
+                  Image.asset(
+                    'assets/images/logo.png',
+                    width: 42,
+                    height: 42,
+                    fit: BoxFit.contain,
+                  ),
 
-                    // ==========================================
-                    // HEADER
-                    // ==========================================
-                    Row(
-                      children: [
-                        // LOGO
-                        Image.asset(
-                          'assets/images/logo.png',
-                          width: 42,
-                          height: 42,
-                          fit: BoxFit.contain,
-                        ),
+                  const SizedBox(width: 10),
 
-                        const SizedBox(width: 10),
-
-                        // NAMA APLIKASI
-                        const Text(
-                          'AURUM',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFF28C28),
-                            letterSpacing: 1,
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        // NOTIFICATION
-                        IconButton(
-                          onPressed: () {
-                            // Fitur notifikasi akan dibuat nanti.
-                          },
-
-                          icon: const Icon(
-                            Icons.notifications_none_rounded,
-                            size: 28,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                      ],
+                  const Text(
+                    'AURUM',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFF28C28),
+                      letterSpacing: 1,
                     ),
+                  ),
 
-                    const SizedBox(height: 38),
+                  const Spacer(),
 
-                    // ==========================================
-                    // GREETING
-                    // ==========================================
-                    const Text(
-                      'Selamat datang',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Color(0xFF555555),
-                        fontWeight: FontWeight.w500,
-                      ),
+                  IconButton(
+                    onPressed: () {},
+
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      size: 28,
+                      color: Color(0xFF333333),
                     ),
+                  ),
+                ],
+              ),
 
-                    const SizedBox(height: 4),
+              const SizedBox(height: 35),
 
-                    const Text(
-                      'Rosalinda',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D2D2D),
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    const Text(
-                      'Semangat bekerja hari ini!',
-                      style: TextStyle(fontSize: 15, color: Color(0xFF777777)),
-                    ),
-
-                    const SizedBox(height: 45),
-
-                    // ==========================================
-                    // MAIN TITLE
-                    // ==========================================
-                    const Text(
-                      'Kelola dan Analisis Emasmu\n'
-                      'dengan Lebih Mudah',
-                      style: TextStyle(
-                        fontSize: 24,
-                        height: 1.25,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2D2D2D),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ==========================================
-                    // DESCRIPTION
-                    // ==========================================
-                    const Text(
-                      'Aurum membantu kamu menghitung nilai dan\n'
-                      'keuntungan emas fisik serta menganalisis\n'
-                      'pergerakan harga menggunakan Pivot Point.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: Color(0xFF777777),
-                      ),
-                    ),
-
-                    const SizedBox(height: 35),
-
-                    // ==========================================
-                    // BUTTON
-                    // ==========================================
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-
-                      child: ElevatedButton(
-                        onPressed: _goToDashboard,
-
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF28C28),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-
-                          children: [
-                            Text(
-                              'Mulai Menghitung Sekarang',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-
-                            SizedBox(width: 10),
-
-                            Icon(Icons.arrow_forward_rounded, size: 20),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 35),
-
-                    // ==========================================
-                    // DECORATION / ILLUSTRATION
-                    // ==========================================
-                    Center(
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        width: 110,
-                        height: 110,
-                        fit: BoxFit.contain,
-                        opacity: const AlwaysStoppedAnimation(0.08),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-                  ],
+              // ================================================
+              // TITLE
+              // ================================================
+              const Text(
+                'Kalkulator',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFF28C28),
                 ),
               ),
-            ),
 
-            // ==========================================
-            // BOTTOM NAVIGATION BAR
-            // ==========================================
-            _buildBottomNavigationBar(),
-          ],
+              const SizedBox(height: 8),
+
+              const Text(
+                'Pilih jenis kalkulator yang ingin digunakan.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF777777),
+                  height: 1.5,
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              // ================================================
+              // EMAS FISIK
+              // ================================================
+              _buildCalculatorCard(
+                icon: Icons.monetization_on_outlined,
+                title: 'Kalkulator Emas Fisik',
+                description:
+                    'Hitung keuntungan atau kerugian '
+                    'dari transaksi emas fisik.',
+                page: const PhysicalGoldCalculator(),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ================================================
+              // PIVOT POINT
+              // ================================================
+              _buildCalculatorCard(
+                icon: Icons.show_chart_rounded,
+                title: 'Kalkulator Pivot Point',
+                description:
+                    'Hitung Pivot Point berdasarkan '
+                    'harga High, Low, dan Close.',
+                page: const PivotCalculator(),
+              ),
+
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
+  // ==========================================================
+  // CARD
+  // ==========================================================
 
-      decoration: const BoxDecoration(
-        color: Colors.white,
+  Widget _buildCalculatorCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Widget page,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        _openCalculator(page);
+      },
 
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 12,
-            offset: Offset(0, -3),
-          ),
-        ],
-      ),
+      child: Container(
+        width: double.infinity,
 
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
+        padding: const EdgeInsets.all(20),
 
-        onTap: _onNavbarTap,
+        decoration: BoxDecoration(
+          color: Colors.white,
 
-        type: BottomNavigationBarType.fixed,
+          borderRadius: BorderRadius.circular(20),
 
-        backgroundColor: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
 
-        elevation: 0,
+        child: Row(
+          children: [
+            Container(
+              width: 55,
+              height: 55,
 
-        selectedItemColor: const Color(0xFFF28C28),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFE5CC),
+                borderRadius: BorderRadius.circular(16),
+              ),
 
-        unselectedItemColor: const Color(0xFF999999),
+              child: Icon(icon, color: const Color(0xFFF28C28), size: 30),
+            ),
 
-        selectedFontSize: 11,
+            const SizedBox(width: 16),
 
-        unselectedFontSize: 11,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
 
-        items: const [
-          // BERANDA
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF3D2B1F),
+                    ),
+                  ),
 
-            activeIcon: Icon(Icons.home_rounded),
+                  const SizedBox(height: 6),
 
-            label: 'Beranda',
-          ),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-          // KALKULATOR
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calculate_outlined),
+            const SizedBox(width: 8),
 
-            activeIcon: Icon(Icons.calculate_rounded),
-
-            label: 'Kalkulator',
-          ),
-
-          // RIWAYAT
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-
-            activeIcon: Icon(Icons.history_rounded),
-
-            label: 'Riwayat',
-          ),
-
-          // PROFIL
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-
-            activeIcon: Icon(Icons.person_rounded),
-
-            label: 'Profil',
-          ),
-        ],
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 18,
+              color: Color(0xFFF28C28),
+            ),
+          ],
+        ),
       ),
     );
   }
