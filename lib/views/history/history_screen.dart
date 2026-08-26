@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 
+import 'physical_gold_history_detail.dart';
+import 'pivot_history_detail.dart';
+
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
+
+  // ============================================================
+  // COLOR
+  // ============================================================
+
+  static const Color backgroundColor = Color(0xFFFFF8F0);
+  static const Color orangeColor = Color(0xFFF28C28);
+  static const Color darkBrown = Color(0xFF3D2B1F);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F0),
+      backgroundColor: backgroundColor,
 
       body: SafeArea(
         child: SingleChildScrollView(
@@ -16,12 +27,11 @@ class HistoryScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-              // ==========================================
+              // ==================================================
               // HEADER
-              // ==========================================
+              // ==================================================
               Row(
                 children: [
-                  // LOGO
                   Image.asset(
                     'assets/images/logo.png',
                     width: 42,
@@ -31,24 +41,20 @@ class HistoryScreen extends StatelessWidget {
 
                   const SizedBox(width: 10),
 
-                  // NAMA APLIKASI
                   const Text(
                     'AURUM',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFF28C28),
+                      color: orangeColor,
                       letterSpacing: 1,
                     ),
                   ),
 
                   const Spacer(),
 
-                  // NOTIFIKASI
                   IconButton(
-                    onPressed: () {
-                      // Fitur notifikasi akan dibuat nanti.
-                    },
+                    onPressed: () {},
                     icon: const Icon(
                       Icons.notifications_none_rounded,
                       size: 28,
@@ -60,22 +66,22 @@ class HistoryScreen extends StatelessWidget {
 
               const SizedBox(height: 35),
 
-              // ==========================================
+              // ==================================================
               // TITLE
-              // ==========================================
+              // ==================================================
               const Text(
                 'Riwayat Perhitungan',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFF28C28),
+                  color: orangeColor,
                 ),
               ),
 
               const SizedBox(height: 8),
 
               const Text(
-                'Tinjau analisis Emas dan Pivot terbaru anda.',
+                'Tinjau analisis Emas dan Pivot terbaru anda',
                 style: TextStyle(
                   fontSize: 14,
                   color: Color(0xFF777777),
@@ -83,60 +89,100 @@ class HistoryScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 24),
 
-              // ==========================================
-              // RIWAYAT 1
-              // ==========================================
+              // ==================================================
+              // FILTER
+              // ==================================================
+              Row(
+                children: [
+                  _buildFilter(label: 'Semua', selected: true),
+
+                  const SizedBox(width: 10),
+
+                  _buildFilter(label: 'Emas Fisik', selected: false),
+
+                  const SizedBox(width: 10),
+
+                  _buildFilter(label: 'Pivot Point', selected: false),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // ==================================================
+              // HISTORY 1 - EMAS
+              // ==================================================
               _buildHistoryCard(
-                type: 'Emas Fisik',
-                date: '18 Agustus 2026',
-                time: '10:30',
-                result: 'Keuntungan',
-                value: 'Rp 1.250.000',
+                context: context,
+                type: 'EMAS FISIK',
+                date: '24 Okt 2026, 14:32',
+                result: 'Profit',
+                value: '+Rp 30.000.000',
+                subtitle1: 'Harga Beli/Jual',
+                subtitleValue1: '1.250k / 1.310k',
+                subtitle2: 'Modal',
+                subtitleValue2: 'Rp 625.000.000',
                 icon: Icons.monetization_on_outlined,
+                iconColor: orangeColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PhysicalGoldHistoryDetail(),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 16),
 
-              // ==========================================
-              // RIWAYAT 2
-              // ==========================================
+              // ==================================================
+              // HISTORY 2 - PIVOT
+              // ==================================================
               _buildHistoryCard(
-                type: 'Pivot Point',
-                date: '17 Agustus 2026',
-                time: '15:45',
-                result: 'Pivot Point',
-                value: '2.450.50',
+                context: context,
+                type: 'PIVOT POINT',
+                date: '24 Okt 2026, 09:15',
+                result: 'Pivot Point (PP)',
+                value: '1972.80',
+                subtitle1: 'High / Low / Close',
+                subtitleValue1: '1985 / 1960 / 1972',
                 icon: Icons.show_chart_rounded,
+                iconColor: orangeColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PivotHistoryDetail(),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 16),
 
-              // ==========================================
-              // RIWAYAT 3
-              // ==========================================
+              // ==================================================
+              // HISTORY 3 - PIVOT
+              // ==================================================
               _buildHistoryCard(
-                type: 'Emas Fisik',
-                date: '16 Agustus 2026',
-                time: '09:20',
-                result: 'Keuntungan',
-                value: 'Rp 850.000',
-                icon: Icons.monetization_on_outlined,
-              ),
-
-              const SizedBox(height: 16),
-
-              // ==========================================
-              // RIWAYAT 4
-              // ==========================================
-              _buildHistoryCard(
-                type: 'Pivot Point',
-                date: '15 Agustus 2026',
-                time: '14:10',
-                result: 'Pivot Point',
-                value: '2.425.75',
+                context: context,
+                type: 'PIVOT POINT',
+                date: '24 Okt 2026, 09:15',
+                result: 'Pivot Point (PP)',
+                value: '1234.00',
+                subtitle1: 'High / Low / Close',
+                subtitleValue1: '1980 / 1955 / 1975',
                 icon: Icons.show_chart_rounded,
+                iconColor: orangeColor,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PivotHistoryDetail(),
+                    ),
+                  );
+                },
               ),
 
               const SizedBox(height: 30),
@@ -147,120 +193,211 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  // ==================================================
-  // HISTORY CARD
-  // ==================================================
+  // ============================================================
+  // FILTER
+  // ============================================================
 
-  Widget _buildHistoryCard({
-    required String type,
-    required String date,
-    required String time,
-    required String result,
-    required String value,
-    required IconData icon,
-  }) {
+  Widget _buildFilter({required String label, required bool selected}) {
     return Container(
-      width: double.infinity,
-
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
 
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: selected ? orangeColor : Colors.white,
+
+        borderRadius: BorderRadius.circular(20),
+
+        border: Border.all(
+          color: selected ? orangeColor : const Color(0xFFE5D9CE),
+        ),
+      ),
+
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: selected ? Colors.white : const Color(0xFF777777),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // HISTORY CARD
+  // ============================================================
+
+  Widget _buildHistoryCard({
+    required BuildContext context,
+    required String type,
+    required String date,
+    required String result,
+    required String value,
+    required String subtitle1,
+    required String subtitleValue1,
+    required IconData icon,
+    required Color iconColor,
+    String? subtitle2,
+    String? subtitleValue2,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+
+      child: InkWell(
+        onTap: onTap,
 
         borderRadius: BorderRadius.circular(18),
 
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+        child: Container(
+          width: double.infinity,
 
-      child: Row(
-        children: [
-          // ==========================================
-          // ICON
-          // ==========================================
-          Container(
-            width: 52,
-            height: 52,
+          padding: const EdgeInsets.all(18),
 
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE5CC),
-              borderRadius: BorderRadius.circular(15),
-            ),
+          decoration: BoxDecoration(
+            color: Colors.white,
 
-            child: Icon(icon, color: const Color(0xFFF28C28), size: 28),
+            borderRadius: BorderRadius.circular(18),
+
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
 
-          const SizedBox(width: 15),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
 
-          // ==========================================
-          // CONTENT
-          // ==========================================
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ==================================================
+              // ICON
+              // ==================================================
+              Container(
+                width: 52,
+                height: 52,
 
-              children: [
-                Text(
-                  type,
-
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF3D2B1F),
-                  ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE5CC),
+                  borderRadius: BorderRadius.circular(15),
                 ),
 
-                const SizedBox(height: 5),
+                child: Icon(icon, color: iconColor, size: 28),
+              ),
 
-                Text(
-                  '$date • $time',
+              const SizedBox(width: 15),
 
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF999999),
-                  ),
+              // ==================================================
+              // CONTENT
+              // ==================================================
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                  children: [
+                    Text(
+                      type,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: darkBrown,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    Text(
+                      date,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF999999),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Text(
+                      result,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF777777),
+                      ),
+                    ),
+
+                    const SizedBox(height: 3),
+
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: orangeColor,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Text(
+                      subtitle1,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF999999),
+                      ),
+                    ),
+
+                    const SizedBox(height: 3),
+
+                    Text(
+                      subtitleValue1,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: darkBrown,
+                      ),
+                    ),
+
+                    if (subtitle2 != null && subtitleValue2 != null) ...[
+                      const SizedBox(height: 10),
+
+                      Text(
+                        subtitle2,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF999999),
+                        ),
+                      ),
+
+                      const SizedBox(height: 3),
+
+                      Text(
+                        subtitleValue2,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: darkBrown,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
+              ),
 
-                const SizedBox(height: 8),
+              // ==================================================
+              // ARROW
+              // ==================================================
+              const Padding(
+                padding: EdgeInsets.only(top: 3),
 
-                Text(
-                  result,
-
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF777777),
-                  ),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: orangeColor,
                 ),
-
-                const SizedBox(height: 2),
-
-                Text(
-                  value,
-
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFF28C28),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          // ==========================================
-          // ARROW
-          // ==========================================
-          const Icon(
-            Icons.arrow_forward_ios_rounded,
-            size: 17,
-            color: Color(0xFFF28C28),
-          ),
-        ],
+        ),
       ),
     );
   }
