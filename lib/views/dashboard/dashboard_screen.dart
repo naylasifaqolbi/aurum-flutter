@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'physical_gold_formula_screen.dart';
 import 'pivot_formula_screen.dart';
+import 'historical_gold_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   // ============================================================
@@ -365,7 +366,12 @@ class DashboardScreen extends StatelessWidget {
           // ======================================================
           GestureDetector(
             onTap: () {
-              _showComingSoon(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HistoricalGoldScreen(),
+                ),
+              );
             },
 
             child: Container(
@@ -678,33 +684,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // COMING SOON
-  // ============================================================
-
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Fitur ini akan segera tersedia.',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-
-        backgroundColor: darkBrown,
-
-        behavior: SnackBarBehavior.floating,
-
-        margin: const EdgeInsets.all(16),
-
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
-        duration: const Duration(seconds: 2),
       ),
     );
   }
