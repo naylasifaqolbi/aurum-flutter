@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'pivot_result.dart';
 
 class PivotCalculator extends StatefulWidget {
-  const PivotCalculator({super.key});
+  final VoidCallback? onBack;
+
+  const PivotCalculator({super.key, this.onBack});
 
   @override
   State<PivotCalculator> createState() => _PivotCalculatorState();
@@ -234,6 +236,26 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                 // ==================================================
                 Row(
                   children: [
+                    // TOMBOL BACK
+                    IconButton(
+                      onPressed: () {
+                        if (widget.onBack != null) {
+                          widget.onBack!();
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 22,
+                        color: Color(0xFF333333),
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+
+                    const SizedBox(width: 16),
+
                     Image.asset(
                       'assets/images/logo.png',
                       width: 42,
@@ -257,7 +279,6 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
                     IconButton(
                       onPressed: () {},
-
                       icon: const Icon(
                         Icons.notifications_none_rounded,
                         size: 28,

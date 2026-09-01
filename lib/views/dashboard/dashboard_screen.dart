@@ -30,6 +30,45 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: backgroundColor,
 
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        toolbarHeight: 64,
+        titleSpacing: 20,
+        // ==================================================
+        // HEADER
+        // ==================================================
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              width: 42,
+              height: 42,
+              fit: BoxFit.contain,
+            ),
+
+            const SizedBox(width: 10),
+
+            const Text(
+              'AURUM',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: orangeColor,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE8E8E8)),
+        ),
+      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -40,46 +79,6 @@ class DashboardScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-              // ==================================================
-              // HEADER
-              // ==================================================
-              Row(
-                children: [
-                  Image.asset(
-                    'assets/images/logo.png',
-                    width: 42,
-                    height: 42,
-                    fit: BoxFit.contain,
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  const Text(
-                    'AURUM',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: orangeColor,
-                      letterSpacing: 1,
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  IconButton(
-                    onPressed: () {},
-
-                    icon: const Icon(
-                      Icons.notifications_none_rounded,
-                      size: 28,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 28),
-
               // ==================================================
               // WELCOME
               // ==================================================

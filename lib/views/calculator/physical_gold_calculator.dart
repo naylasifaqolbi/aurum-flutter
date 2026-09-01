@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'physical_gold_result.dart';
 
 class PhysicalGoldCalculator extends StatefulWidget {
-  const PhysicalGoldCalculator({super.key});
+  final VoidCallback? onBack;
+
+  const PhysicalGoldCalculator({super.key, this.onBack});
 
   @override
   State<PhysicalGoldCalculator> createState() => _PhysicalGoldCalculatorState();
@@ -164,6 +166,26 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
                 // ==========================================
                 Row(
                   children: [
+                    // TOMBOL BACK
+                    IconButton(
+                      onPressed: () {
+                        if (widget.onBack != null) {
+                          widget.onBack!();
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 22,
+                        color: Color(0xFF333333),
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+
+                    const SizedBox(width: 16),
+
                     Image.asset(
                       'assets/images/logo.png',
                       width: 42,
@@ -189,7 +211,6 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
                       onPressed: () {
                         // Fitur notifikasi akan dibuat nanti.
                       },
-
                       icon: const Icon(
                         Icons.notifications_none_rounded,
                         size: 28,

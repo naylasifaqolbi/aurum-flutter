@@ -25,7 +25,7 @@ class HistoricalApiService {
   // GANTI 192.168.1.10 dengan IPv4 laptop kamu.
   //
 
-  static const String baseUrl = 'http://masukkanIP:3000';
+  static const String baseUrl = 'http://IPkamu:3000';
 
   // ============================================================
   // GET HISTORICAL DATA
