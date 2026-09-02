@@ -5,239 +5,202 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class HistoricalApiService {
   // ============================================================
-  // BACKEND
+  // BASE URL
   // ============================================================
 
   static const String baseUrl = 'http://192.168.2.91:3000';
 
   // ============================================================
-  // CACHE
+  // CATEGORY
   // ============================================================
 
-  // Cache berdasarkan URL/request.
-  static const String _cacheKey = 'historical_gold_cache_v2';
+  static const String defaultCategory = 'LGD Daily';
 
-  // Cache terakhir yang berhasil diperoleh dari backend.
-  static const String _latestCacheKey = 'historical_gold_latest_cache_v1';
+  static const List<String> availableCategories = [
+    'LGD Daily',
+    'HSI Daily',
+    'SNI Daily',
+  ];
+
+  // ============================================================
+  // CACHE KEY
+  // ============================================================
+
+  // Versi dinaikkan supaya cache lama yang hanya mengenal
+  // LGD tidak tercampur dengan HSI / SNI.
+  static const String _cacheKey = 'historical_gold_cache_v3';
+
+  static const String _latestCacheKey = 'historical_gold_latest_cache_v2';
 
   // ============================================================
   // GET HISTORICAL DATA
   // ============================================================
 
   static Future<Map<String, dynamic>> getHistoricalData({
+    String category = defaultCategory,
     DateTime? startDate,
     DateTime? endDate,
     int page = 1,
     int limit = 10,
   }) async {
     final Uri uri = _buildUri(
+      category: category,
       startDate: startDate,
       endDate: endDate,
       page: page,
       limit: limit,
     );
 
-    print('');
-    print('========================================');
-    print('AURUM HISTORICAL API');
-    print('Request URL: $uri');
-    print('========================================');
-
     try {
-      // ----------------------------------------------------------
-      // REQUEST KE BACKEND
-      // ----------------------------------------------------------
+      // ========================================================
+      // REQUEST BACKEND
+      // ========================================================
 
-      final http.Response response = await http
+      final response = await http
           .get(uri, headers: {'Accept': 'application/json'})
           .timeout(const Duration(seconds: 5));
 
-      print('HTTP Status: ${response.statusCode}');
-
-      // ----------------------------------------------------------
-      // CEK STATUS RESPONSE
-      // ----------------------------------------------------------
+      // ========================================================
+      // VALIDASI STATUS
+      // ========================================================
 
       if (response.statusCode != 200) {
         throw Exception('Server error: ${response.statusCode}');
       }
 
-      // ----------------------------------------------------------
-      // CEK RESPONSE KOSONG
-      // ----------------------------------------------------------
+      // ========================================================
+      // VALIDASI BODY
+      // ========================================================
 
-      if (response.body.isEmpty) {
+      if (response.body.trim().isEmpty) {
         throw Exception('Response server kosong.');
       }
 
-      // ----------------------------------------------------------
-      // DECODE JSON
-      // ----------------------------------------------------------
+      // ========================================================
+      // PARSE JSON
+      // ========================================================
 
       final dynamic decoded = jsonDecode(response.body);
 
-      if (decoded is! Map<String, dynamic>) {
-        throw Exception('Format response server tidak valid.');
+      if (decoded is! Map) {
+        throw Exception('Format response tidak valid.');
       }
 
-      final Map<String, dynamic> json = decoded;
+      final Map<String, dynamic> json = Map<String, dynamic>.from(decoded);
 
-      // ----------------------------------------------------------
-      // CEK SUCCESS
-      // ----------------------------------------------------------
+      // ========================================================
+      // VALIDASI SUCCESS
+      // ========================================================
 
       if (json['success'] != true) {
-        throw Exception(
-          json['message']?.toString() ?? 'Gagal mengambil data historical.',
-        );
+        throw Exception(json['message']?.toString() ?? 'Gagal mengambil data.');
       }
 
-      // ----------------------------------------------------------
+      // ========================================================
       // CACHE TIME
-      // ----------------------------------------------------------
+      // ========================================================
 
       final String cacheTime = DateTime.now().toIso8601String();
 
-      // ----------------------------------------------------------
+      // ========================================================
       // SIMPAN CACHE
-      // ----------------------------------------------------------
+      // ========================================================
 
-      print('');
-      print('========================================');
-      print('HISTORICAL DATA ONLINE');
-      print('Data berhasil diambil dari backend.');
-      print('Menyimpan data ke cache HP...');
-      print('========================================');
+      await _saveCache(
+        uri: uri,
+        category: category,
+        data: json,
+        cacheTime: cacheTime,
+      );
 
-      await _saveCache(uri: uri, data: json, cacheTime: cacheTime);
+      // ========================================================
+      // RETURN ONLINE
+      // ========================================================
 
-      print('Cache berhasil diperbarui.');
+      return {
+        ...json,
 
-      // ----------------------------------------------------------
-      // RETURN DATA ONLINE
-      // ----------------------------------------------------------
+        'fromCache': false,
 
-      return {...json, 'fromCache': false, 'cacheTime': cacheTime};
+        'cacheTime': cacheTime,
+
+        'category': json['category'] ?? category,
+      };
     } catch (error) {
-      // ==========================================================
-      // BACKEND TIDAK DAPAT DIAKSES
-      // ==========================================================
+      // ========================================================
+      // BACKEND GAGAL
+      // COBA EXACT CACHE
+      // ========================================================
 
-      print('');
-      print('========================================');
-      print('BACKEND TIDAK DAPAT DIAKSES');
-      print('Error: $error');
-      print('========================================');
-
-      print('Mencoba mengambil data dari cache...');
-
-      // ----------------------------------------------------------
-      // 1. COBA EXACT CACHE
-      // ----------------------------------------------------------
-
-      final Map<String, dynamic>? exactCache = await _getCache(uri: uri);
+      final Map<String, dynamic>? exactCache = await _getCache(uri);
 
       if (exactCache != null) {
-        print('');
-        print('========================================');
-        print('EXACT CACHE DIGUNAKAN');
-        print('Backend OFF');
-        print('Request yang sama ditemukan di cache.');
-        print('========================================');
-
-        return _convertCacheToResult(exactCache);
+        return _convertCacheToResult(exactCache, category: category);
       }
 
-      // ----------------------------------------------------------
-      // 2. KALAU EXACT CACHE TIDAK ADA,
-      //    GUNAKAN CACHE TERAKHIR
-      // ----------------------------------------------------------
+      // ========================================================
+      // EXACT CACHE TIDAK ADA
+      // COBA LATEST CACHE
+      // DENGAN CATEGORY YANG SAMA
+      // ========================================================
 
-      final Map<String, dynamic>? latestCache = await _getLatestCache();
+      final Map<String, dynamic>? latestCache = await _getLatestCache(
+        category: category,
+      );
 
       if (latestCache != null) {
-        print('');
-        print('========================================');
-        print('LATEST CACHE DIGUNAKAN');
-        print('Backend OFF');
-        print('Exact cache tidak ditemukan.');
-        print('Menggunakan data terakhir yang tersimpan.');
-        print('========================================');
-
-        return _convertCacheToResult(latestCache);
+        return _convertCacheToResult(latestCache, category: category);
       }
 
-      // ----------------------------------------------------------
-      // 3. TIDAK ADA CACHE SAMA SEKALI
-      // ----------------------------------------------------------
-
-      print('');
-      print('========================================');
-      print('CACHE TIDAK DITEMUKAN');
-      print('Belum pernah ada data yang tersimpan.');
-      print('========================================');
+      // ========================================================
+      // TIDAK ADA CACHE
+      // ========================================================
 
       rethrow;
     }
   }
 
   // ============================================================
-  // GET CACHE SAJA
-  // ============================================================
-  //
-  // Digunakan oleh screen agar cache bisa langsung ditampilkan
-  // sebelum mencoba koneksi ke backend.
-  //
+  // GET CACHED DATA
   // ============================================================
 
   static Future<Map<String, dynamic>?> getCachedHistoricalData({
+    String category = defaultCategory,
     DateTime? startDate,
     DateTime? endDate,
     int page = 1,
     int limit = 10,
   }) async {
     final Uri uri = _buildUri(
+      category: category,
       startDate: startDate,
       endDate: endDate,
       page: page,
       limit: limit,
     );
 
-    // ----------------------------------------------------------
-    // COBA EXACT CACHE
-    // ----------------------------------------------------------
+    // ==========================================================
+    // EXACT CACHE
+    // ==========================================================
 
-    final Map<String, dynamic>? exactCache = await _getCache(uri: uri);
+    final Map<String, dynamic>? exactCache = await _getCache(uri);
 
     if (exactCache != null) {
-      print('');
-      print('========================================');
-      print('CACHE AWAL DITEMUKAN');
-      print('Menggunakan exact cache.');
-      print('========================================');
-
-      return _convertCacheToResult(exactCache);
+      return _convertCacheToResult(exactCache, category: category);
     }
 
-    // ----------------------------------------------------------
-    // COBA LATEST CACHE
-    // ----------------------------------------------------------
+    // ==========================================================
+    // LATEST CACHE
+    // CATEGORY HARUS SAMA
+    // ==========================================================
 
-    final Map<String, dynamic>? latestCache = await _getLatestCache();
+    final Map<String, dynamic>? latestCache = await _getLatestCache(
+      category: category,
+    );
 
     if (latestCache != null) {
-      print('');
-      print('========================================');
-      print('LATEST CACHE AWAL DITEMUKAN');
-      print('Menggunakan cache terakhir.');
-      print('========================================');
-
-      return _convertCacheToResult(latestCache);
+      return _convertCacheToResult(latestCache, category: category);
     }
-
-    // ----------------------------------------------------------
-    // TIDAK ADA CACHE
-    // ----------------------------------------------------------
 
     return null;
   }
@@ -247,19 +210,31 @@ class HistoricalApiService {
   // ============================================================
 
   static Uri _buildUri({
+    required String category,
     DateTime? startDate,
     DateTime? endDate,
     required int page,
     required int limit,
   }) {
     final Map<String, String> queryParameters = {
+      'category': category,
+
       'page': page.toString(),
+
       'limit': limit.toString(),
     };
+
+    // ==========================================================
+    // START DATE
+    // ==========================================================
 
     if (startDate != null) {
       queryParameters['start_date'] = _formatDate(startDate);
     }
+
+    // ==========================================================
+    // END DATE
+    // ==========================================================
 
     if (endDate != null) {
       queryParameters['end_date'] = _formatDate(endDate);
@@ -276,182 +251,166 @@ class HistoricalApiService {
 
   static Future<void> _saveCache({
     required Uri uri,
+    required String category,
     required Map<String, dynamic> data,
     required String cacheTime,
   }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // ----------------------------------------------------------
-    // AMBIL CACHE LAMA
-    // ----------------------------------------------------------
+    // ==========================================================
+    // EXACT CACHE
+    // ==========================================================
 
-    Map<String, dynamic> allCache = {};
+    final Map<String, dynamic> exactCache = {
+      'category': category,
 
-    final String? existingCache = prefs.getString(_cacheKey);
+      'data': data,
 
-    if (existingCache != null) {
-      try {
-        final dynamic decoded = jsonDecode(existingCache);
+      'cacheTime': cacheTime,
 
-        if (decoded is Map<String, dynamic>) {
-          allCache = decoded;
-        }
-      } catch (error) {
-        print('Cache lama tidak dapat dibaca.');
-      }
-    }
+      'savedAt': DateTime.now().toIso8601String(),
+    };
 
-    // ----------------------------------------------------------
-    // SIMPAN EXACT CACHE
-    // ----------------------------------------------------------
+    await prefs.setString(
+      '$_cacheKey:${uri.toString()}',
+      jsonEncode(exactCache),
+    );
 
-    allCache[uri.toString()] = {'data': data, 'cacheTime': cacheTime};
-
-    await prefs.setString(_cacheKey, jsonEncode(allCache));
-
-    // ----------------------------------------------------------
-    // SIMPAN LATEST CACHE
-    // ----------------------------------------------------------
+    // ==========================================================
+    // LATEST CACHE
+    // ==========================================================
 
     final Map<String, dynamic> latestCache = {
+      'category': category,
+
       'data': data,
+
       'cacheTime': cacheTime,
-      'requestUrl': uri.toString(),
+
+      'savedAt': DateTime.now().toIso8601String(),
     };
 
     await prefs.setString(_latestCacheKey, jsonEncode(latestCache));
-
-    print('Exact cache disimpan untuk: $uri');
-
-    print('Latest cache berhasil diperbarui.');
   }
 
   // ============================================================
   // GET EXACT CACHE
   // ============================================================
 
-  static Future<Map<String, dynamic>?> _getCache({required Uri uri}) async {
+  static Future<Map<String, dynamic>?> _getCache(Uri uri) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    final String? cacheString = prefs.getString(_cacheKey);
+    final String? cached = prefs.getString('$_cacheKey:${uri.toString()}');
 
-    if (cacheString == null) {
+    if (cached == null) {
       return null;
     }
 
     try {
-      final dynamic decoded = jsonDecode(cacheString);
+      final dynamic decoded = jsonDecode(cached);
 
-      if (decoded is! Map<String, dynamic>) {
-        return null;
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
       }
-
-      final dynamic cachedItem = decoded[uri.toString()];
-
-      if (cachedItem is! Map<String, dynamic>) {
-        return null;
-      }
-
-      return Map<String, dynamic>.from(cachedItem);
-    } catch (error) {
-      print('Gagal membaca exact cache: $error');
-
+    } catch (_) {
       return null;
     }
+
+    return null;
   }
 
   // ============================================================
   // GET LATEST CACHE
   // ============================================================
 
-  static Future<Map<String, dynamic>?> _getLatestCache() async {
+  static Future<Map<String, dynamic>?> _getLatestCache({
+    required String category,
+  }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    final String? latestCacheString = prefs.getString(_latestCacheKey);
+    final String? cached = prefs.getString(_latestCacheKey);
 
-    if (latestCacheString == null) {
+    if (cached == null) {
       return null;
     }
 
     try {
-      final dynamic decoded = jsonDecode(latestCacheString);
+      final dynamic decoded = jsonDecode(cached);
 
-      if (decoded is! Map<String, dynamic>) {
+      if (decoded is! Map) {
         return null;
       }
 
-      return Map<String, dynamic>.from(decoded);
-    } catch (error) {
-      print('Gagal membaca latest cache: $error');
+      final Map<String, dynamic> cache = Map<String, dynamic>.from(decoded);
 
+      // ========================================================
+      // CEK CATEGORY
+      //
+      // Penting agar:
+      // LGD tidak mengambil cache HSI
+      // HSI tidak mengambil cache SNI
+      // SNI tidak mengambil cache LGD
+      // ========================================================
+
+      final String cachedCategory = cache['category']?.toString().trim() ?? '';
+
+      if (cachedCategory.toLowerCase() != category.trim().toLowerCase()) {
+        return null;
+      }
+
+      return cache;
+    } catch (_) {
       return null;
     }
   }
 
   // ============================================================
-  // CONVERT CACHE
+  // CONVERT CACHE TO RESULT
   // ============================================================
 
   static Map<String, dynamic> _convertCacheToResult(
-    Map<String, dynamic> cachedItem,
-  ) {
-    final dynamic cachedResponse = cachedItem['data'];
+    Map<String, dynamic> cache, {
+    required String category,
+  }) {
+    final dynamic storedData = cache['data'];
 
-    final String? cacheTime = cachedItem['cacheTime']?.toString();
+    Map<String, dynamic> result;
 
-    if (cachedResponse is! Map<String, dynamic>) {
-      throw Exception('Format cache tidak valid.');
+    if (storedData is Map) {
+      result = Map<String, dynamic>.from(storedData);
+    } else {
+      result = {'success': true, 'data': []};
     }
 
-    return {...cachedResponse, 'fromCache': true, 'cacheTime': cacheTime};
+    return {
+      ...result,
+
+      'success': true,
+
+      'fromCache': true,
+
+      'cacheTime': cache['cacheTime'],
+
+      'category': result['category'] ?? cache['category'] ?? category,
+    };
   }
 
   // ============================================================
   // GET CACHE TIME
   // ============================================================
 
-  static Future<DateTime?> getCacheTime({
-    DateTime? startDate,
-    DateTime? endDate,
-    int page = 1,
-    int limit = 10,
+  static Future<String?> getCacheTime({
+    String category = defaultCategory,
   }) async {
-    final Uri uri = _buildUri(
-      startDate: startDate,
-      endDate: endDate,
-      page: page,
-      limit: limit,
+    final Map<String, dynamic>? latestCache = await _getLatestCache(
+      category: category,
     );
 
-    // ----------------------------------------------------------
-    // EXACT CACHE
-    // ----------------------------------------------------------
-
-    final Map<String, dynamic>? exactCache = await _getCache(uri: uri);
-
-    if (exactCache != null) {
-      final String? cacheTime = exactCache['cacheTime']?.toString();
-
-      if (cacheTime != null) {
-        return DateTime.tryParse(cacheTime);
-      }
+    if (latestCache == null) {
+      return null;
     }
 
-    // ----------------------------------------------------------
-    // LATEST CACHE
-    // ----------------------------------------------------------
-
-    final Map<String, dynamic>? latestCache = await _getLatestCache();
-
-    if (latestCache != null) {
-      final String? cacheTime = latestCache['cacheTime']?.toString();
-
-      if (cacheTime != null) {
-        return DateTime.tryParse(cacheTime);
-      }
-    }
-
-    return null;
+    return latestCache['cacheTime']?.toString();
   }
 
   // ============================================================
@@ -461,11 +420,13 @@ class HistoricalApiService {
   static Future<void> clearCache() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    await prefs.remove(_cacheKey);
+    final Set<String> keys = prefs.getKeys();
 
-    await prefs.remove(_latestCacheKey);
-
-    print('Cache historical gold berhasil dihapus.');
+    for (final String key in keys) {
+      if (key.startsWith('$_cacheKey:') || key == _latestCacheKey) {
+        await prefs.remove(key);
+      }
+    }
   }
 
   // ============================================================
@@ -473,10 +434,12 @@ class HistoricalApiService {
   // ============================================================
 
   static String _formatDate(DateTime date) {
+    final String year = date.year.toString().padLeft(4, '0');
+
     final String month = date.month.toString().padLeft(2, '0');
 
     final String day = date.day.toString().padLeft(2, '0');
 
-    return '${date.year}-$month-$day';
+    return '$year-$month-$day';
   }
 }
