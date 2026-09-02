@@ -11,7 +11,8 @@ class HistoricalGoldScreen extends StatefulWidget {
   State<HistoricalGoldScreen> createState() => _HistoricalGoldScreenState();
 }
 
-class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
+class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
+    with WidgetsBindingObserver {
   // ============================================================
   // COLOR
   // ============================================================
@@ -47,6 +48,20 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   String? _errorMessage;
 
   // ============================================================
+  // CACHE STATUS
+  // ============================================================
+
+  bool _isFromCache = false;
+
+  DateTime? _cacheTime;
+
+  // ============================================================
+  // REQUEST STATUS
+  // ============================================================
+
+  bool _requestRunning = false;
+
+  // ============================================================
   // PAGINATION
   // ============================================================
 
@@ -68,13 +83,36 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   void initState() {
     super.initState();
 
-    // Ambil data pertama kali halaman dibuka.
+    WidgetsBinding.instance.addObserver(this);
+
+    // ----------------------------------------------------------
+    // LOAD DATA
+    // ----------------------------------------------------------
+
     _loadHistoricalData();
 
-    // Auto refresh setiap 5 menit.
+    // ----------------------------------------------------------
+    // AUTO REFRESH SETIAP 5 MENIT
+    // ----------------------------------------------------------
+
     _refreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
       _loadHistoricalData(showLoading: false);
     });
+  }
+
+  // ============================================================
+  // APP LIFECYCLE
+  // ============================================================
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // ----------------------------------------------------------
+    // KETIKA APLIKASI KEMBALI DIBUKA
+    // ----------------------------------------------------------
+
+    if (state == AppLifecycleState.resumed) {
+      _loadHistoricalData(showLoading: false);
+    }
   }
 
   // ============================================================
@@ -85,6 +123,8 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   void dispose() {
     _refreshTimer?.cancel();
 
+    WidgetsBinding.instance.removeObserver(this);
+
     super.dispose();
   }
 
@@ -94,6 +134,18 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
   Future<void> _loadHistoricalData({bool showLoading = true}) async {
     // ----------------------------------------------------------
+    // CEGAH REQUEST DOBEL
+    // ----------------------------------------------------------
+
+    if (_requestRunning) {
+      return;
+    }
+
+    _requestRunning = true;
+
+    bool hasDisplayedData = _historicalData.isNotEmpty;
+
+    // ----------------------------------------------------------
     // LOADING
     // ----------------------------------------------------------
 
@@ -102,12 +154,49 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
         _isLoading = true;
         _errorMessage = null;
       });
+    } else if (mounted) {
+      setState(() {
+        _errorMessage = null;
+      });
     }
 
     try {
-      // --------------------------------------------------------
-      // REQUEST KE BACKEND
-      // --------------------------------------------------------
+      // ========================================================
+      // LANGKAH 1
+      // TAMPILKAN CACHE TERLEBIH DAHULU
+      // ========================================================
+
+      if (showLoading) {
+        try {
+          final Map<String, dynamic>? cachedResult =
+              await HistoricalApiService.getCachedHistoricalData(
+                startDate: _startDate,
+                endDate: _endDate,
+                page: _currentPage,
+                limit: 10,
+              );
+
+          if (cachedResult != null && mounted) {
+            _applyResult(cachedResult);
+
+            hasDisplayedData = true;
+
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        } catch (cacheError) {
+          debugPrint(
+            'Cache awal tidak dapat digunakan: '
+            '$cacheError',
+          );
+        }
+      }
+
+      // ========================================================
+      // LANGKAH 2
+      // COBA BACKEND
+      // ========================================================
 
       final Map<String, dynamic> result =
           await HistoricalApiService.getHistoricalData(
@@ -117,73 +206,27 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
             limit: 10,
           );
 
-      // --------------------------------------------------------
-      // AMBIL DATA
-      // --------------------------------------------------------
-
-      final List<dynamic> rawData = result['data'] ?? [];
-
-      // --------------------------------------------------------
-      // KONVERSI JSON → DART MAP
-      // --------------------------------------------------------
-
-      final List<Map<String, String>> convertedData = rawData
-          .map<Map<String, String>>((dynamic item) {
-            final Map<String, dynamic> data = Map<String, dynamic>.from(item);
-
-            return {
-              'date': data['date']?.toString() ?? '-',
-
-              'open': data['open']?.toString() ?? '-',
-
-              'high': data['high']?.toString() ?? '-',
-
-              'low': data['low']?.toString() ?? '-',
-
-              'close': data['close']?.toString() ?? '-',
-            };
-          })
-          .toList();
-
-      // --------------------------------------------------------
-      // PAGINATION
-      // --------------------------------------------------------
-
-      final Map<String, dynamic> pagination = result['pagination'] != null
-          ? Map<String, dynamic>.from(result['pagination'])
-          : {};
-
-      final int currentPage = pagination['current_page'] is int
-          ? pagination['current_page']
-          : _currentPage;
-
-      final int totalPages = pagination['total_pages'] is int
-          ? pagination['total_pages']
-          : 1;
-
-      // --------------------------------------------------------
-      // UPDATE UI
-      // --------------------------------------------------------
+      // ========================================================
+      // LANGKAH 3
+      // APPLY DATA
+      // ========================================================
 
       if (!mounted) {
         return;
       }
 
+      _applyResult(result);
+
+      hasDisplayedData = _historicalData.isNotEmpty;
+
       setState(() {
-        _historicalData = convertedData;
-
-        _currentPage = currentPage;
-
-        _totalPages = totalPages;
-
         _isLoading = false;
-
         _errorMessage = null;
       });
     } catch (e) {
-      // --------------------------------------------------------
-      // ERROR
-      // --------------------------------------------------------
+      // ========================================================
+      // BACKEND GAGAL
+      // ========================================================
 
       debugPrint('Historical API Error: $e');
 
@@ -191,12 +234,132 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
         return;
       }
 
-      setState(() {
-        _isLoading = false;
+      // --------------------------------------------------------
+      // JIKA SUDAH ADA DATA
+      // JANGAN HAPUS DATA TERSEBUT
+      // --------------------------------------------------------
 
-        _errorMessage = 'Gagal mengambil data historical.';
-      });
+      if (hasDisplayedData || _historicalData.isNotEmpty) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
+
+        debugPrint('Backend OFF. Data cache tetap ditampilkan.');
+      } else {
+        // ------------------------------------------------------
+        // BELUM ADA DATA DAN BELUM ADA CACHE
+        // ------------------------------------------------------
+
+        setState(() {
+          _isLoading = false;
+
+          _errorMessage = 'Gagal mengambil data historical.';
+        });
+      }
+    } finally {
+      _requestRunning = false;
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  // ============================================================
+  // APPLY RESULT
+  // ============================================================
+
+  void _applyResult(Map<String, dynamic> result) {
+    // ----------------------------------------------------------
+    // DATA
+    // ----------------------------------------------------------
+
+    final dynamic rawDataValue = result['data'];
+
+    final List<dynamic> rawData = rawDataValue is List ? rawDataValue : [];
+
+    // ----------------------------------------------------------
+    // KONVERSI JSON → DART MAP
+    // ----------------------------------------------------------
+
+    final List<Map<String, String>> convertedData = rawData
+        .map<Map<String, String>>((dynamic item) {
+          if (item is! Map) {
+            return {
+              'date': '-',
+              'open': '-',
+              'high': '-',
+              'low': '-',
+              'close': '-',
+            };
+          }
+
+          final Map<String, dynamic> data = Map<String, dynamic>.from(item);
+
+          return {
+            'date': data['date']?.toString() ?? '-',
+            'open': data['open']?.toString() ?? '-',
+            'high': data['high']?.toString() ?? '-',
+            'low': data['low']?.toString() ?? '-',
+            'close': data['close']?.toString() ?? '-',
+          };
+        })
+        .toList();
+
+    // ----------------------------------------------------------
+    // PAGINATION
+    // ----------------------------------------------------------
+
+    final Map<String, dynamic> pagination = result['pagination'] != null
+        ? Map<String, dynamic>.from(result['pagination'])
+        : {};
+
+    final int currentPage = pagination['current_page'] is int
+        ? pagination['current_page']
+        : _currentPage;
+
+    final int totalPages = pagination['total_pages'] is int
+        ? pagination['total_pages']
+        : 1;
+
+    // ----------------------------------------------------------
+    // CACHE STATUS
+    // ----------------------------------------------------------
+
+    final bool fromCache = result['fromCache'] == true;
+
+    DateTime? cacheTime;
+
+    final dynamic cacheTimeValue = result['cacheTime'];
+
+    if (cacheTimeValue is String) {
+      cacheTime = DateTime.tryParse(cacheTimeValue);
+    }
+
+    // ----------------------------------------------------------
+    // UPDATE UI
+    // ----------------------------------------------------------
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _historicalData = convertedData;
+
+      _currentPage = currentPage;
+
+      _totalPages = totalPages < 1 ? 1 : totalPages;
+
+      _isFromCache = fromCache;
+
+      _cacheTime = cacheTime;
+
+      _errorMessage = null;
+    });
   }
 
   // ============================================================
@@ -211,7 +374,13 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
     }
 
     if (_errorMessage == null) {
-      _showMessage('Data historical berhasil diperbarui.');
+      if (_isFromCache) {
+        _showMessage(
+          'Backend tidak tersedia. Data terakhir dari cache tetap ditampilkan.',
+        );
+      } else {
+        _showMessage('Data historical berhasil diperbarui.');
+      }
     }
   }
 
@@ -260,13 +429,9 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
     final DateTime? selectedDate = await showDatePicker(
       context: context,
-
       initialDate: initialDate,
-
       firstDate: DateTime(2020),
-
       lastDate: DateTime(now.year + 5),
-
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -334,15 +499,10 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           message,
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
-
         backgroundColor: darkBrown,
-
         behavior: SnackBarBehavior.floating,
-
         margin: const EdgeInsets.all(16),
-
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-
         duration: const Duration(seconds: 2),
       ),
     );
@@ -367,6 +527,30 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   }
 
   // ============================================================
+  // FORMAT CACHE TIME
+  // ============================================================
+
+  String _formatCacheTime() {
+    if (_cacheTime == null) {
+      return '-';
+    }
+
+    final DateTime localTime = _cacheTime!.toLocal();
+
+    final String day = localTime.day.toString().padLeft(2, '0');
+
+    final String month = localTime.month.toString().padLeft(2, '0');
+
+    final String year = localTime.year.toString();
+
+    final String hour = localTime.hour.toString().padLeft(2, '0');
+
+    final String minute = localTime.minute.toString().padLeft(2, '0');
+
+    return '$day/$month/$year $hour:$minute';
+  }
+
+  // ============================================================
   // BUILD
   // ============================================================
 
@@ -380,16 +564,13 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
       // ========================================================
       appBar: AppBar(
         backgroundColor: backgroundColor,
-
         elevation: 0,
-
         surfaceTintColor: Colors.transparent,
 
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
           },
-
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             color: darkBrown,
@@ -429,11 +610,8 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
                 children: [
                   Image.asset(
                     'assets/images/logo.png',
-
                     width: 42,
-
                     height: 42,
-
                     fit: BoxFit.contain,
                   ),
 
@@ -441,7 +619,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
                   const Text(
                     'AURUM',
-
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -454,7 +631,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
                   IconButton(
                     onPressed: () {},
-
                     icon: const Icon(
                       Icons.notifications_none_rounded,
                       size: 28,
@@ -471,7 +647,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
               // ==================================================
               const Text(
                 'Historical Data Emas',
-
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -483,7 +658,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
               const Text(
                 'Data Historis Emas',
-
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -496,7 +670,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
               const Text(
                 'Menampilkan data harga emas '
                 'berdasarkan periode yang kamu pilih.',
-
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.black54,
@@ -504,7 +677,14 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
+
+              // ==================================================
+              // STATUS DATA
+              // ==================================================
+              if (_historicalData.isNotEmpty) _buildDataStatusCard(),
+
+              const SizedBox(height: 20),
 
               // ==================================================
               // FILTER
@@ -518,7 +698,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
               // ==================================================
               const Text(
                 'Data Historis',
-
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -531,9 +710,9 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
               // ==================================================
               // DATA
               // ==================================================
-              if (_isLoading)
+              if (_isLoading && _historicalData.isEmpty)
                 _buildLoadingCard()
-              else if (_errorMessage != null)
+              else if (_errorMessage != null && _historicalData.isEmpty)
                 _buildErrorCard()
               else if (_historicalData.isEmpty)
                 _buildEmptyDataCard()
@@ -556,43 +735,113 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   }
 
   // ============================================================
+  // DATA STATUS CARD
+  // ============================================================
+
+  Widget _buildDataStatusCard() {
+    final String title = _isFromCache
+        ? 'OFFLINE • DATA CACHE'
+        : 'ONLINE • DATA TERBARU';
+
+    final String subtitle = _isFromCache
+        ? 'Backend tidak tersedia. Menampilkan data terakhir yang tersimpan di HP.'
+        : 'Data berhasil diperbarui dari backend dan cache telah diperbarui.';
+
+    final IconData icon = _isFromCache
+        ? Icons.cloud_off_rounded
+        : Icons.cloud_done_rounded;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: _isFromCache ? lightOrange : Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0xFFFFE0C2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: orangeColor, size: 23),
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: darkBrown,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.black54,
+                    height: 1.4,
+                  ),
+                ),
+
+                if (_cacheTime != null) ...[
+                  const SizedBox(height: 4),
+
+                  Text(
+                    'Terakhir diperbarui: '
+                    '${_formatCacheTime()}',
+                    style: const TextStyle(fontSize: 10, color: Colors.black45),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
   // FILTER CARD
   // ============================================================
 
   Widget _buildFilterCard() {
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.all(18),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(20),
-
         border: Border.all(color: const Color(0xFFFFE0C2)),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-
             blurRadius: 12,
-
             offset: const Offset(0, 5),
           ),
         ],
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           // ======================================================
           // KATEGORI
           // ======================================================
           const Text(
             'KATEGORI',
-
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -605,17 +854,12 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
           Container(
             width: double.infinity,
-
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-
             decoration: BoxDecoration(
               color: backgroundColor,
-
               borderRadius: BorderRadius.circular(12),
-
               border: Border.all(color: const Color(0xFFFFE0C2)),
             ),
-
             child: const Row(
               children: [
                 Icon(Icons.trending_up_rounded, color: orangeColor, size: 21),
@@ -625,7 +869,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
                 Expanded(
                   child: Text(
                     'LGD Daily',
-
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -646,7 +889,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           // ======================================================
           const Text(
             'MULAI',
-
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -659,7 +901,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
           _buildDateButton(
             date: _startDate,
-
             onTap: () {
               _selectDate(isStart: true);
             },
@@ -672,7 +913,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           // ======================================================
           const Text(
             'AKHIR',
-
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
@@ -685,7 +925,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
           _buildDateButton(
             date: _endDate,
-
             onTap: () {
               _selectDate(isStart: false);
             },
@@ -698,9 +937,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           // ======================================================
           SizedBox(
             width: double.infinity,
-
             height: 48,
-
             child: ElevatedButton.icon(
               onPressed: _isLoading ? null : _refreshData,
 
@@ -708,19 +945,14 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
               label: const Text(
                 'Refresh',
-
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
 
               style: ElevatedButton.styleFrom(
                 backgroundColor: orangeColor,
-
                 foregroundColor: Colors.white,
-
                 disabledBackgroundColor: Colors.grey.shade300,
-
                 elevation: 0,
-
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(13),
                 ),
@@ -742,20 +974,14 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   }) {
     return GestureDetector(
       onTap: onTap,
-
       child: Container(
         width: double.infinity,
-
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-
         decoration: BoxDecoration(
           color: backgroundColor,
-
           borderRadius: BorderRadius.circular(12),
-
           border: Border.all(color: const Color(0xFFFFE0C2)),
         ),
-
         child: Row(
           children: [
             const Icon(
@@ -769,12 +995,9 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
             Expanded(
               child: Text(
                 _formatDate(date),
-
                 style: TextStyle(
                   fontSize: 14,
-
                   color: date == null ? const Color(0xFFAAAAAA) : darkBrown,
-
                   fontWeight: date == null
                       ? FontWeight.normal
                       : FontWeight.w600,
@@ -796,27 +1019,19 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   Widget _buildLoadingCard() {
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 45),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(20),
-
         border: Border.all(color: const Color(0xFFFFE0C2)),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-
             blurRadius: 10,
-
             offset: const Offset(0, 4),
           ),
         ],
       ),
-
       child: const Column(
         children: [
           CircularProgressIndicator(color: orangeColor),
@@ -825,7 +1040,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
           Text(
             'Mengambil data historical...',
-
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -844,17 +1058,12 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   Widget _buildErrorCard() {
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.all(25),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(20),
-
         border: Border.all(color: const Color(0xFFFFE0C2)),
       ),
-
       child: Column(
         children: [
           const Icon(Icons.error_outline_rounded, color: orangeColor, size: 40),
@@ -863,7 +1072,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
           const Text(
             'Gagal mengambil data',
-
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -874,11 +1082,10 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           const SizedBox(height: 8),
 
           const Text(
-            'Periksa koneksi backend '
-            'kemudian coba lagi.',
-
+            'Belum ada data historical '
+            'yang tersimpan di cache. '
+            'Pastikan backend aktif kemudian coba lagi.',
             textAlign: TextAlign.center,
-
             style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.5),
           ),
 
@@ -886,13 +1093,10 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
           ElevatedButton(
             onPressed: _loadHistoricalData,
-
             style: ElevatedButton.styleFrom(
               backgroundColor: orangeColor,
-
               foregroundColor: Colors.white,
             ),
-
             child: const Text('Coba Lagi'),
           ),
         ],
@@ -907,45 +1111,31 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   Widget _buildEmptyDataCard() {
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 45),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(20),
-
         border: Border.all(color: const Color(0xFFFFE0C2)),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-
             blurRadius: 10,
-
             offset: const Offset(0, 4),
           ),
         ],
       ),
-
       child: Column(
         children: [
           Container(
             width: 62,
-
             height: 62,
-
             decoration: BoxDecoration(
               color: lightOrange,
-
               borderRadius: BorderRadius.circular(18),
             ),
-
             child: const Icon(
               Icons.bar_chart_rounded,
-
               color: orangeColor,
-
               size: 32,
             ),
           ),
@@ -954,7 +1144,6 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
           const Text(
             'Data Belum Tersedia',
-
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
@@ -967,9 +1156,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           const Text(
             'Data historis emas akan '
             'ditampilkan setelah tersedia.',
-
             textAlign: TextAlign.center,
-
             style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.5),
           ),
         ],
@@ -984,25 +1171,18 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   Widget _buildHistoricalTable() {
     return Container(
       width: double.infinity,
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(18),
-
         border: Border.all(color: const Color(0xFFFFE0C2)),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-
             blurRadius: 10,
-
             offset: const Offset(0, 4),
           ),
         ],
       ),
-
       child: Column(
         children: [
           // ======================================================
@@ -1010,24 +1190,19 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           // ======================================================
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-
             decoration: const BoxDecoration(
               color: Color(0xFFFFEAD6),
-
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(18),
                 topRight: Radius.circular(18),
               ),
             ),
-
             child: const Row(
               children: [
                 Expanded(
                   flex: 2,
-
                   child: Text(
                     'Tanggal',
-
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -1039,9 +1214,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
                 Expanded(
                   child: Text(
                     'Open',
-
                     textAlign: TextAlign.right,
-
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -1053,9 +1226,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
                 Expanded(
                   child: Text(
                     'High',
-
                     textAlign: TextAlign.right,
-
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -1067,9 +1238,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
                 Expanded(
                   child: Text(
                     'Low',
-
                     textAlign: TextAlign.right,
-
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -1081,9 +1250,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
                 Expanded(
                   child: Text(
                     'Close',
-
                     textAlign: TextAlign.right,
-
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -1113,19 +1280,15 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   Widget _buildHistoricalRow(Map<String, String> data) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: Color(0xFFF0E5DA))),
       ),
-
       child: Row(
         children: [
           Expanded(
             flex: 2,
-
             child: Text(
               data['date'] ?? '-',
-
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -1137,9 +1300,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           Expanded(
             child: Text(
               data['open'] ?? '-',
-
               textAlign: TextAlign.right,
-
               style: const TextStyle(fontSize: 11, color: darkBrown),
             ),
           ),
@@ -1147,9 +1308,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           Expanded(
             child: Text(
               data['high'] ?? '-',
-
               textAlign: TextAlign.right,
-
               style: const TextStyle(fontSize: 11, color: darkBrown),
             ),
           ),
@@ -1157,9 +1316,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           Expanded(
             child: Text(
               data['low'] ?? '-',
-
               textAlign: TextAlign.right,
-
               style: const TextStyle(fontSize: 11, color: darkBrown),
             ),
           ),
@@ -1167,9 +1324,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
           Expanded(
             child: Text(
               data['close'] ?? '-',
-
               textAlign: TextAlign.right,
-
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -1189,14 +1344,12 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   Widget _buildPagination() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-
       children: [
         // --------------------------------------------------------
         // PREVIOUS
         // --------------------------------------------------------
         _buildPageButton(
           icon: Icons.chevron_left_rounded,
-
           onTap: _previousPage,
         ),
 
@@ -1207,16 +1360,12 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
         // --------------------------------------------------------
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-
           decoration: BoxDecoration(
             color: orangeColor,
-
             borderRadius: BorderRadius.circular(10),
           ),
-
           child: Text(
             '$_currentPage / $_totalPages',
-
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -1249,27 +1398,19 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
     return GestureDetector(
       onTap: disabled ? null : onTap,
-
       child: Container(
         width: 34,
-
         height: 34,
-
         decoration: BoxDecoration(
           color: disabled ? Colors.grey.shade200 : Colors.white,
-
           borderRadius: BorderRadius.circular(10),
-
           border: Border.all(
             color: disabled ? Colors.grey.shade300 : const Color(0xFFFFE0C2),
           ),
         ),
-
         child: Icon(
           icon,
-
           size: 20,
-
           color: disabled ? Colors.grey : orangeColor,
         ),
       ),
