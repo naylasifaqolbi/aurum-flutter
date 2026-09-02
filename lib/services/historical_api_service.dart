@@ -8,7 +8,7 @@ class HistoricalApiService {
   // BASE URL
   // ============================================================
 
-  static const String baseUrl = 'http://192.168.2.91:3000';
+  static const String baseUrl = 'https://www.newsmaker.id/api/historical-data';
 
   // ============================================================
   // CATEGORY
@@ -26,11 +26,15 @@ class HistoricalApiService {
   // CACHE KEY
   // ============================================================
 
-  // Versi dinaikkan supaya cache lama yang hanya mengenal
-  // LGD tidak tercampur dengan HSI / SNI.
-  static const String _cacheKey = 'historical_gold_cache_v3';
+  // Cache lama sengaja dibuat versi baru agar tidak bercampur
+  // dengan struktur cache versi sebelumnya.
+  static const String _fullCacheKey = 'historical_gold_full_cache_v6';
 
-  static const String _latestCacheKey = 'historical_gold_latest_cache_v2';
+  // ============================================================
+  // REQUEST TIMEOUT
+  // ============================================================
+
+  static const Duration _requestTimeout = Duration(seconds: 15);
 
   // ============================================================
   // GET HISTORICAL DATA
@@ -43,37 +47,43 @@ class HistoricalApiService {
     int page = 1,
     int limit = 10,
   }) async {
-    final Uri uri = _buildUri(
-      category: category,
-      startDate: startDate,
-      endDate: endDate,
-      page: page,
-      limit: limit,
-    );
+    // ==========================================================
+    // NORMALISASI CATEGORY
+    // ==========================================================
+
+    final String selectedCategory = _getCanonicalCategory(category);
+
+    // ==========================================================
+    // REQUEST LANGSUNG KE NEWSMAKER
+    // ==========================================================
 
     try {
-      // ========================================================
-      // REQUEST BACKEND
-      // ========================================================
+      final Uri requestUri = Uri.parse(baseUrl);
 
-      final response = await http
-          .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 5));
+      final http.Response response = await http
+          .get(
+            requestUri,
+            headers: const {
+              'Accept': 'application/json',
+              'User-Agent': 'Mozilla/5.0',
+            },
+          )
+          .timeout(_requestTimeout);
 
       // ========================================================
-      // VALIDASI STATUS
+      // CEK STATUS HTTP
       // ========================================================
 
       if (response.statusCode != 200) {
-        throw Exception('Server error: ${response.statusCode}');
+        throw Exception('Newsmaker server error: ${response.statusCode}');
       }
 
       // ========================================================
-      // VALIDASI BODY
+      // CEK BODY
       // ========================================================
 
       if (response.body.trim().isEmpty) {
-        throw Exception('Response server kosong.');
+        throw Exception('Response dari Newsmaker kosong.');
       }
 
       // ========================================================
@@ -83,85 +93,140 @@ class HistoricalApiService {
       final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is! Map) {
-        throw Exception('Format response tidak valid.');
+        throw Exception('Format response dari Newsmaker tidak valid.');
       }
 
       final Map<String, dynamic> json = Map<String, dynamic>.from(decoded);
 
       // ========================================================
-      // VALIDASI SUCCESS
+      // CEK STATUS RESPONSE
       // ========================================================
 
-      if (json['success'] != true) {
-        throw Exception(json['message']?.toString() ?? 'Gagal mengambil data.');
+      if (json['status'] != null) {
+        final int? status = int.tryParse(json['status'].toString());
+
+        if (status != null && status != 200) {
+          throw Exception(
+            json['message']?.toString() ??
+                'Gagal mengambil data dari Newsmaker.',
+          );
+        }
       }
 
       // ========================================================
-      // CACHE TIME
+      // AMBIL DATA
       // ========================================================
 
-      final String cacheTime = DateTime.now().toIso8601String();
+      final dynamic rawData = json['data'];
+
+      if (rawData is! List) {
+        throw Exception('Data historical dari Newsmaker tidak valid.');
+      }
 
       // ========================================================
-      // SIMPAN CACHE
+      // NORMALISASI SEMUA DATA
       // ========================================================
 
-      await _saveCache(
-        uri: uri,
-        category: category,
-        data: json,
-        cacheTime: cacheTime,
+      final List<Map<String, String>> allData = _normalizeData(rawData);
+
+      // ========================================================
+      // PISAHKAN DATA BERDASARKAN CATEGORY
+      // ========================================================
+
+      final Map<String, List<Map<String, String>>> categorizedData =
+          _categorizeData(allData);
+
+      // ========================================================
+      // SIMPAN FULL CACHE
+      //
+      // PENTING:
+      // Yang disimpan adalah SEMUA DATA kategori,
+      // bukan data yang sudah dipagination.
+      // ========================================================
+
+      await _saveFullCache(categorizedData);
+
+      // ========================================================
+      // AMBIL DATA UNTUK CATEGORY YANG DIMINTA
+      // ========================================================
+
+      final List<Map<String, String>> selectedData =
+          List<Map<String, String>>.from(
+            categorizedData[selectedCategory] ?? [],
+          );
+
+      // ========================================================
+      // FILTER + SORT + PAGINATION
+      // ========================================================
+
+      final Map<String, dynamic> result = _buildResult(
+        category: selectedCategory,
+        data: selectedData,
+        startDate: startDate,
+        endDate: endDate,
+        page: page,
+        limit: limit,
       );
 
       // ========================================================
-      // RETURN ONLINE
+      // ONLINE
       // ========================================================
 
       return {
-        ...json,
-
+        ...result,
         'fromCache': false,
-
-        'cacheTime': cacheTime,
-
-        'category': json['category'] ?? category,
+        'cacheTime': DateTime.now().toIso8601String(),
       };
     } catch (error) {
       // ========================================================
-      // BACKEND GAGAL
-      // COBA EXACT CACHE
+      // ONLINE GAGAL
+      //
+      // LANGSUNG GUNAKAN FULL CACHE CATEGORY YANG SESUAI
       // ========================================================
 
-      final Map<String, dynamic>? exactCache = await _getCache(uri);
+      final Map<String, List<Map<String, String>>>? cachedData =
+          await _getFullCache();
 
-      if (exactCache != null) {
-        return _convertCacheToResult(exactCache, category: category);
-      }
+      if (cachedData != null) {
+        final List<Map<String, String>> selectedData =
+            List<Map<String, String>>.from(cachedData[selectedCategory] ?? []);
 
-      // ========================================================
-      // EXACT CACHE TIDAK ADA
-      // COBA LATEST CACHE
-      // DENGAN CATEGORY YANG SAMA
-      // ========================================================
+        // ======================================================
+        // JIKA CATEGORY ADA DI CACHE
+        // ======================================================
 
-      final Map<String, dynamic>? latestCache = await _getLatestCache(
-        category: category,
-      );
+        if (selectedData.isNotEmpty) {
+          final Map<String, dynamic> result = _buildResult(
+            category: selectedCategory,
+            data: selectedData,
+            startDate: startDate,
+            endDate: endDate,
+            page: page,
+            limit: limit,
+          );
 
-      if (latestCache != null) {
-        return _convertCacheToResult(latestCache, category: category);
+          final String? cacheTime = await getCacheTime(
+            category: selectedCategory,
+          );
+
+          return {...result, 'fromCache': true, 'cacheTime': cacheTime};
+        }
       }
 
       // ========================================================
       // TIDAK ADA CACHE
       // ========================================================
 
-      rethrow;
+      throw Exception(
+        'Tidak dapat mengambil data historical. '
+        'Newsmaker atau internet tidak tersedia '
+        'dan belum ada cache untuk $selectedCategory.',
+      );
     }
   }
 
   // ============================================================
-  // GET CACHED DATA
+  // GET CACHED HISTORICAL DATA
   // ============================================================
 
   static Future<Map<String, dynamic>?> getCachedHistoricalData({
@@ -171,8 +236,37 @@ class HistoricalApiService {
     int page = 1,
     int limit = 10,
   }) async {
-    final Uri uri = _buildUri(
-      category: category,
+    final String selectedCategory = _getCanonicalCategory(category);
+
+    // ==========================================================
+    // AMBIL FULL CACHE
+    // ==========================================================
+
+    final Map<String, List<Map<String, String>>>? cachedData =
+        await _getFullCache();
+
+    if (cachedData == null) {
+      return null;
+    }
+
+    // ==========================================================
+    // AMBIL CATEGORY YANG SESUAI
+    // ==========================================================
+
+    final List<Map<String, String>> selectedData =
+        List<Map<String, String>>.from(cachedData[selectedCategory] ?? []);
+
+    if (selectedData.isEmpty) {
+      return null;
+    }
+
+    // ==========================================================
+    // FILTER + SORT + PAGINATION
+    // ==========================================================
+
+    final Map<String, dynamic> result = _buildResult(
+      category: selectedCategory,
+      data: selectedData,
       startDate: startDate,
       endDate: endDate,
       page: page,
@@ -180,157 +274,371 @@ class HistoricalApiService {
     );
 
     // ==========================================================
-    // EXACT CACHE
+    // CACHE TIME
     // ==========================================================
 
-    final Map<String, dynamic>? exactCache = await _getCache(uri);
+    final String? cacheTime = await getCacheTime(category: selectedCategory);
 
-    if (exactCache != null) {
-      return _convertCacheToResult(exactCache, category: category);
-    }
-
-    // ==========================================================
-    // LATEST CACHE
-    // CATEGORY HARUS SAMA
-    // ==========================================================
-
-    final Map<String, dynamic>? latestCache = await _getLatestCache(
-      category: category,
-    );
-
-    if (latestCache != null) {
-      return _convertCacheToResult(latestCache, category: category);
-    }
-
-    return null;
+    return {...result, 'fromCache': true, 'cacheTime': cacheTime};
   }
 
   // ============================================================
-  // BUILD URI
+  // NORMALIZE DATA
   // ============================================================
 
-  static Uri _buildUri({
+  static List<Map<String, String>> _normalizeData(List<dynamic> rawData) {
+    final List<Map<String, String>> result = [];
+
+    for (final dynamic item in rawData) {
+      if (item is! Map) {
+        continue;
+      }
+
+      final Map<String, dynamic> source = Map<String, dynamic>.from(item);
+
+      final String date = _firstValidValue([
+        source['date'],
+        source['tanggal'],
+        source['Date'],
+        source['Tanggal'],
+      ]);
+
+      final String open = _firstValidValue([source['open'], source['Open']]);
+
+      final String high = _firstValidValue([source['high'], source['High']]);
+
+      final String low = _firstValidValue([source['low'], source['Low']]);
+
+      final String close = _firstValidValue([source['close'], source['Close']]);
+
+      final String category = _firstValidValue([
+        source['category'],
+        source['Category'],
+        source['CATEGORY'],
+      ]);
+
+      // ========================================================
+      // HANYA SIMPAN DATA YANG MEMILIKI CATEGORY
+      // ========================================================
+
+      if (category.trim().isEmpty) {
+        continue;
+      }
+
+      // ========================================================
+      // NORMALISASI CATEGORY
+      // ========================================================
+
+      final String canonicalCategory = _tryGetCanonicalCategory(category);
+
+      // Kalau bukan LGD/HSI/SNI, abaikan.
+      if (canonicalCategory.isEmpty) {
+        continue;
+      }
+
+      result.add({
+        'date': date,
+        'open': open,
+        'high': high,
+        'low': low,
+        'close': close,
+        'category': canonicalCategory,
+      });
+    }
+
+    return result;
+  }
+
+  // ============================================================
+  // FIRST VALID VALUE
+  // ============================================================
+
+  static String _firstValidValue(List<dynamic> values) {
+    for (final dynamic value in values) {
+      if (value == null) {
+        continue;
+      }
+
+      final String text = value.toString().trim();
+
+      if (text.isEmpty) {
+        continue;
+      }
+
+      if (text == '-') {
+        continue;
+      }
+
+      return text;
+    }
+
+    return '-';
+  }
+
+  // ============================================================
+  // CATEGORIZE DATA
+  // ============================================================
+
+  static Map<String, List<Map<String, String>>> _categorizeData(
+    List<Map<String, String>> allData,
+  ) {
+    final Map<String, List<Map<String, String>>> result = {
+      'LGD Daily': [],
+      'HSI Daily': [],
+      'SNI Daily': [],
+    };
+
+    // ==========================================================
+    // MASUKKAN DATA KE CATEGORY MASING-MASING
+    // ==========================================================
+
+    for (final Map<String, String> item in allData) {
+      final String category = item['category'] ?? '';
+
+      final String canonical = _tryGetCanonicalCategory(category);
+
+      if (canonical.isEmpty) {
+        continue;
+      }
+
+      result[canonical]!.add(Map<String, String>.from(item));
+    }
+
+    // ==========================================================
+    // SORT MASING-MASING CATEGORY
+    //
+    // TERBARU -> TERLAMA
+    // ==========================================================
+
+    for (final String category in availableCategories) {
+      result[category]!.sort((a, b) {
+        final DateTime? dateA = _parseDate(a['date']);
+
+        final DateTime? dateB = _parseDate(b['date']);
+
+        if (dateA == null && dateB == null) {
+          return 0;
+        }
+
+        if (dateA == null) {
+          return 1;
+        }
+
+        if (dateB == null) {
+          return -1;
+        }
+
+        return dateB.compareTo(dateA);
+      });
+    }
+
+    return result;
+  }
+
+  // ============================================================
+  // BUILD RESULT
+  //
+  // FUNGSI INI DIGUNAKAN UNTUK DATA ONLINE DAN OFFLINE
+  // ============================================================
+
+  static Map<String, dynamic> _buildResult({
     required String category,
+    required List<Map<String, String>> data,
     DateTime? startDate,
     DateTime? endDate,
     required int page,
     required int limit,
   }) {
-    final Map<String, String> queryParameters = {
-      'category': category,
+    // ==========================================================
+    // COPY DATA
+    //
+    // Supaya data cache asli tidak ikut berubah.
+    // ==========================================================
 
-      'page': page.toString(),
-
-      'limit': limit.toString(),
-    };
+    List<Map<String, String>> filteredData = data
+        .map((item) => Map<String, String>.from(item))
+        .toList();
 
     // ==========================================================
-    // START DATE
+    // FILTER START DATE
     // ==========================================================
 
     if (startDate != null) {
-      queryParameters['start_date'] = _formatDate(startDate);
+      final String start = _formatDate(startDate);
+
+      filteredData = filteredData.where((item) {
+        final String itemDate = item['date'] ?? '';
+
+        final String dateOnly = _getDateOnly(itemDate);
+
+        if (dateOnly.isEmpty || dateOnly == '-') {
+          return false;
+        }
+
+        return dateOnly.compareTo(start) >= 0;
+      }).toList();
     }
 
     // ==========================================================
-    // END DATE
+    // FILTER END DATE
     // ==========================================================
 
     if (endDate != null) {
-      queryParameters['end_date'] = _formatDate(endDate);
+      final String end = _formatDate(endDate);
+
+      filteredData = filteredData.where((item) {
+        final String itemDate = item['date'] ?? '';
+
+        final String dateOnly = _getDateOnly(itemDate);
+
+        if (dateOnly.isEmpty || dateOnly == '-') {
+          return false;
+        }
+
+        return dateOnly.compareTo(end) <= 0;
+      }).toList();
     }
 
-    return Uri.parse(
-      '$baseUrl/api/historical-gold',
-    ).replace(queryParameters: queryParameters);
-  }
-
-  // ============================================================
-  // SAVE CACHE
-  // ============================================================
-
-  static Future<void> _saveCache({
-    required Uri uri,
-    required String category,
-    required Map<String, dynamic> data,
-    required String cacheTime,
-  }) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-
     // ==========================================================
-    // EXACT CACHE
+    // SORT LAGI
+    //
+    // Untuk memastikan data tetap rapi setelah filter.
     // ==========================================================
 
-    final Map<String, dynamic> exactCache = {
-      'category': category,
+    filteredData.sort((a, b) {
+      final DateTime? dateA = _parseDate(a['date']);
 
-      'data': data,
+      final DateTime? dateB = _parseDate(b['date']);
 
-      'cacheTime': cacheTime,
-
-      'savedAt': DateTime.now().toIso8601String(),
-    };
-
-    await prefs.setString(
-      '$_cacheKey:${uri.toString()}',
-      jsonEncode(exactCache),
-    );
-
-    // ==========================================================
-    // LATEST CACHE
-    // ==========================================================
-
-    final Map<String, dynamic> latestCache = {
-      'category': category,
-
-      'data': data,
-
-      'cacheTime': cacheTime,
-
-      'savedAt': DateTime.now().toIso8601String(),
-    };
-
-    await prefs.setString(_latestCacheKey, jsonEncode(latestCache));
-  }
-
-  // ============================================================
-  // GET EXACT CACHE
-  // ============================================================
-
-  static Future<Map<String, dynamic>?> _getCache(Uri uri) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    final String? cached = prefs.getString('$_cacheKey:${uri.toString()}');
-
-    if (cached == null) {
-      return null;
-    }
-
-    try {
-      final dynamic decoded = jsonDecode(cached);
-
-      if (decoded is Map) {
-        return Map<String, dynamic>.from(decoded);
+      if (dateA == null && dateB == null) {
+        return 0;
       }
-    } catch (_) {
-      return null;
+
+      if (dateA == null) {
+        return 1;
+      }
+
+      if (dateB == null) {
+        return -1;
+      }
+
+      return dateB.compareTo(dateA);
+    });
+
+    // ==========================================================
+    // PAGINATION
+    // ==========================================================
+
+    final int total = filteredData.length;
+
+    final int safeLimit = limit.clamp(1, 100);
+
+    final int safePage = page < 1 ? 1 : page;
+
+    final int totalPages = total == 0 ? 1 : (total / safeLimit).ceil();
+
+    final int currentPage = safePage > totalPages ? totalPages : safePage;
+
+    final int startIndex = (currentPage - 1) * safeLimit;
+
+    List<Map<String, String>> paginatedData = [];
+
+    if (startIndex < total) {
+      final int endIndex = (startIndex + safeLimit) > total
+          ? total
+          : startIndex + safeLimit;
+
+      paginatedData = filteredData.sublist(startIndex, endIndex);
     }
 
-    return null;
+    // ==========================================================
+    // RESULT
+    // ==========================================================
+
+    return {
+      'success': true,
+      'status': 200,
+      'message': 'OK',
+
+      'category': category,
+
+      'data': paginatedData,
+
+      'pagination': {
+        'current_page': currentPage,
+        'per_page': safeLimit,
+        'total_data': total,
+        'total_pages': totalPages,
+      },
+
+      'updated_at': DateTime.now().toIso8601String(),
+    };
   }
 
   // ============================================================
-  // GET LATEST CACHE
+  // SAVE FULL CACHE
   // ============================================================
 
-  static Future<Map<String, dynamic>?> _getLatestCache({
-    required String category,
-  }) async {
+  static Future<void> _saveFullCache(
+    Map<String, List<Map<String, String>>> categorizedData,
+  ) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    final String? cached = prefs.getString(_latestCacheKey);
+    // ==========================================================
+    // BUAT DATA CACHE
+    // ==========================================================
 
-    if (cached == null) {
+    final Map<String, dynamic> cacheData = {};
+
+    for (final String category in availableCategories) {
+      cacheData[category] = categorizedData[category] ?? [];
+    }
+
+    // ==========================================================
+    // CACHE TIME
+    // ==========================================================
+
+    final String cacheTime = DateTime.now().toIso8601String();
+
+    // ==========================================================
+    // STRUKTUR CACHE
+    // ==========================================================
+
+    final Map<String, dynamic> cache = {
+      'version': 6,
+
+      'savedAt': DateTime.now().toIso8601String(),
+
+      'cacheTime': cacheTime,
+
+      'categories': cacheData,
+    };
+
+    // ==========================================================
+    // SIMPAN SATU FULL CACHE
+    //
+    // Karena di dalamnya sudah ada:
+    //
+    // LGD Daily
+    // HSI Daily
+    // SNI Daily
+    //
+    // Data masing-masing tetap terpisah.
+    // ==========================================================
+
+    await prefs.setString(_fullCacheKey, jsonEncode(cache));
+  }
+
+  // ============================================================
+  // GET FULL CACHE
+  // ============================================================
+
+  static Future<Map<String, List<Map<String, String>>>?> _getFullCache() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final String? cached = prefs.getString(_fullCacheKey);
+
+    if (cached == null || cached.trim().isEmpty) {
       return null;
     }
 
@@ -344,55 +652,88 @@ class HistoricalApiService {
       final Map<String, dynamic> cache = Map<String, dynamic>.from(decoded);
 
       // ========================================================
-      // CEK CATEGORY
-      //
-      // Penting agar:
-      // LGD tidak mengambil cache HSI
-      // HSI tidak mengambil cache SNI
-      // SNI tidak mengambil cache LGD
+      // CEK VERSION
       // ========================================================
 
-      final String cachedCategory = cache['category']?.toString().trim() ?? '';
+      final int version = int.tryParse(cache['version']?.toString() ?? '') ?? 0;
 
-      if (cachedCategory.toLowerCase() != category.trim().toLowerCase()) {
+      if (version != 6) {
         return null;
       }
 
-      return cache;
+      final dynamic categories = cache['categories'];
+
+      if (categories is! Map) {
+        return null;
+      }
+
+      final Map<String, List<Map<String, String>>> result = {
+        'LGD Daily': [],
+        'HSI Daily': [],
+        'SNI Daily': [],
+      };
+
+      // ========================================================
+      // BACA CATEGORY SATU PER SATU
+      // ========================================================
+
+      for (final String category in availableCategories) {
+        final dynamic rawCategory = categories[category];
+
+        if (rawCategory is! List) {
+          continue;
+        }
+
+        final List<Map<String, String>> categoryData = [];
+
+        for (final dynamic item in rawCategory) {
+          if (item is! Map) {
+            continue;
+          }
+
+          final Map<String, dynamic> map = Map<String, dynamic>.from(item);
+
+          categoryData.add({
+            'date': map['date']?.toString() ?? '-',
+            'open': map['open']?.toString() ?? '-',
+            'high': map['high']?.toString() ?? '-',
+            'low': map['low']?.toString() ?? '-',
+            'close': map['close']?.toString() ?? '-',
+            'category': category,
+          });
+        }
+
+        // ======================================================
+        // SORT CACHE
+        // ======================================================
+
+        categoryData.sort((a, b) {
+          final DateTime? dateA = _parseDate(a['date']);
+
+          final DateTime? dateB = _parseDate(b['date']);
+
+          if (dateA == null && dateB == null) {
+            return 0;
+          }
+
+          if (dateA == null) {
+            return 1;
+          }
+
+          if (dateB == null) {
+            return -1;
+          }
+
+          return dateB.compareTo(dateA);
+        });
+
+        result[category] = categoryData;
+      }
+
+      return result;
     } catch (_) {
       return null;
     }
-  }
-
-  // ============================================================
-  // CONVERT CACHE TO RESULT
-  // ============================================================
-
-  static Map<String, dynamic> _convertCacheToResult(
-    Map<String, dynamic> cache, {
-    required String category,
-  }) {
-    final dynamic storedData = cache['data'];
-
-    Map<String, dynamic> result;
-
-    if (storedData is Map) {
-      result = Map<String, dynamic>.from(storedData);
-    } else {
-      result = {'success': true, 'data': []};
-    }
-
-    return {
-      ...result,
-
-      'success': true,
-
-      'fromCache': true,
-
-      'cacheTime': cache['cacheTime'],
-
-      'category': result['category'] ?? cache['category'] ?? category,
-    };
   }
 
   // ============================================================
@@ -402,15 +743,45 @@ class HistoricalApiService {
   static Future<String?> getCacheTime({
     String category = defaultCategory,
   }) async {
-    final Map<String, dynamic>? latestCache = await _getLatestCache(
-      category: category,
-    );
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    if (latestCache == null) {
+    final String? cached = prefs.getString(_fullCacheKey);
+
+    if (cached == null || cached.trim().isEmpty) {
       return null;
     }
 
-    return latestCache['cacheTime']?.toString();
+    try {
+      final dynamic decoded = jsonDecode(cached);
+
+      if (decoded is! Map) {
+        return null;
+      }
+
+      final Map<String, dynamic> cache = Map<String, dynamic>.from(decoded);
+
+      // ========================================================
+      // PASTIKAN CATEGORY VALID
+      // ========================================================
+
+      final String selectedCategory = _getCanonicalCategory(category);
+
+      final dynamic categories = cache['categories'];
+
+      if (categories is! Map) {
+        return null;
+      }
+
+      final dynamic categoryData = categories[selectedCategory];
+
+      if (categoryData is! List || categoryData.isEmpty) {
+        return null;
+      }
+
+      return cache['cacheTime']?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 
   // ============================================================
@@ -420,13 +791,153 @@ class HistoricalApiService {
   static Future<void> clearCache() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    final Set<String> keys = prefs.getKeys();
+    await prefs.remove(_fullCacheKey);
+  }
 
-    for (final String key in keys) {
-      if (key.startsWith('$_cacheKey:') || key == _latestCacheKey) {
-        await prefs.remove(key);
+  // ============================================================
+  // GET CANONICAL CATEGORY
+  // ============================================================
+
+  static String _getCanonicalCategory(String category) {
+    final String normalized = _normalizeCategory(category);
+
+    if (normalized == 'lgd' || normalized == 'lgd daily') {
+      return 'LGD Daily';
+    }
+
+    if (normalized == 'hsi' || normalized == 'hsi daily') {
+      return 'HSI Daily';
+    }
+
+    if (normalized == 'sni' || normalized == 'sni daily') {
+      return 'SNI Daily';
+    }
+
+    // ==========================================================
+    // CARI DARI CATEGORY RESMI
+    // ==========================================================
+
+    for (final String item in availableCategories) {
+      if (_normalizeCategory(item) == normalized) {
+        return item;
       }
     }
+
+    // ==========================================================
+    // DEFAULT
+    // ==========================================================
+
+    return defaultCategory;
+  }
+
+  // ============================================================
+  // GET CANONICAL CATEGORY ATAU KOSONG
+  // ============================================================
+
+  static String _tryGetCanonicalCategory(String category) {
+    final String normalized = _normalizeCategory(category);
+
+    if (normalized == 'lgd' || normalized == 'lgd daily') {
+      return 'LGD Daily';
+    }
+
+    if (normalized == 'hsi' || normalized == 'hsi daily') {
+      return 'HSI Daily';
+    }
+
+    if (normalized == 'sni' || normalized == 'sni daily') {
+      return 'SNI Daily';
+    }
+
+    return '';
+  }
+
+  // ============================================================
+  // NORMALIZE CATEGORY
+  // ============================================================
+
+  static String _normalizeCategory(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  // ============================================================
+  // GET DATE ONLY
+  // ============================================================
+
+  static String _getDateOnly(String value) {
+    final String trimmed = value.trim();
+
+    if (trimmed.isEmpty || trimmed == '-') {
+      return '';
+    }
+
+    // ==========================================================
+    // YYYY-MM-DD
+    // ==========================================================
+
+    if (trimmed.length >= 10 &&
+        RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(trimmed)) {
+      return trimmed.substring(0, 10);
+    }
+
+    // ==========================================================
+    // YYYY/MM/DD
+    // ==========================================================
+
+    if (trimmed.length >= 10 &&
+        RegExp(r'^\d{4}/\d{2}/\d{2}').hasMatch(trimmed)) {
+      return trimmed.substring(0, 10).replaceAll('/', '-');
+    }
+
+    // ==========================================================
+    // PARSE DATE
+    // ==========================================================
+
+    final DateTime? parsed = DateTime.tryParse(trimmed);
+
+    if (parsed != null) {
+      return _formatDate(parsed);
+    }
+
+    return '';
+  }
+
+  // ============================================================
+  // PARSE DATE
+  // ============================================================
+
+  static DateTime? _parseDate(String? value) {
+    if (value == null) {
+      return null;
+    }
+
+    final String trimmed = value.trim();
+
+    if (trimmed.isEmpty || trimmed == '-') {
+      return null;
+    }
+
+    // ==========================================================
+    // NORMAL ISO DATE
+    // ==========================================================
+
+    final DateTime? normal = DateTime.tryParse(trimmed);
+
+    if (normal != null) {
+      return normal;
+    }
+
+    // ==========================================================
+    // DATE ONLY
+    // ==========================================================
+
+    final String dateOnly = _getDateOnly(trimmed);
+
+    if (dateOnly.isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(dateOnly);
   }
 
   // ============================================================

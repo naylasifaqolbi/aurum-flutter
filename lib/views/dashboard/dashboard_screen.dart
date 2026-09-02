@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
+import '../../services/historical_api_service.dart';
 import 'physical_gold_formula_screen.dart';
 import 'pivot_formula_screen.dart';
 import 'historical_gold_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   // ============================================================
   // CALLBACK KE MENU KALKULATOR
   // ============================================================
@@ -12,6 +14,11 @@ class DashboardScreen extends StatelessWidget {
 
   const DashboardScreen({super.key, this.onGoToCalculator});
 
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
   // ============================================================
   // COLOR
   // ============================================================
@@ -20,6 +27,125 @@ class DashboardScreen extends StatelessWidget {
   static const Color orangeColor = Color(0xFFF28C28);
   static const Color darkBrown = Color(0xFF3D2B1F);
   static const Color lightOrange = Color(0xFFFFE5CC);
+
+  // ============================================================
+  // CATEGORY DASHBOARD
+  // ============================================================
+
+  static const String _dashboardCategory = 'LGD Daily';
+
+  // ============================================================
+  // DATA HARGA TERBARU
+  // ============================================================
+
+  Map<String, String> _latestGoldData = {};
+
+  // ============================================================
+  // LOADING DATA
+  // ============================================================
+
+  bool _isLoadingGoldData = true;
+
+  // ============================================================
+  // INIT
+  // ============================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadLatestGoldData();
+  }
+
+  // ============================================================
+  // LOAD DATA LGD TERBARU
+  // ============================================================
+
+  Future<void> _loadLatestGoldData() async {
+    try {
+      // ========================================================
+      // AMBIL DATA DARI HISTORICAL API SERVICE
+      // ========================================================
+
+      final Map<String, dynamic> result =
+          await HistoricalApiService.getHistoricalData(
+            category: _dashboardCategory,
+            page: 1,
+            limit: 10,
+          );
+
+      // ========================================================
+      // AMBIL DATA DARI RESPONSE
+      // ========================================================
+
+      final dynamic rawData = result['data'];
+
+      if (rawData is List && rawData.isNotEmpty) {
+        final dynamic firstItem = rawData.first;
+
+        if (firstItem is Map) {
+          final Map<String, String> latestData = {
+            'date': firstItem['date']?.toString() ?? '-',
+            'open': firstItem['open']?.toString() ?? '-',
+            'high': firstItem['high']?.toString() ?? '-',
+            'low': firstItem['low']?.toString() ?? '-',
+            'close': firstItem['close']?.toString() ?? '-',
+          };
+
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {
+            _latestGoldData = latestData;
+            _isLoadingGoldData = false;
+          });
+
+          return;
+        }
+      }
+
+      // ========================================================
+      // JIKA DATA KOSONG
+      // ========================================================
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _latestGoldData = {
+          'date': '-',
+          'open': '-',
+          'high': '-',
+          'low': '-',
+          'close': '-',
+        };
+
+        _isLoadingGoldData = false;
+      });
+    } catch (_) {
+      // ========================================================
+      // JIKA API DAN CACHE TIDAK TERSEDIA
+      // ========================================================
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _latestGoldData = {
+          'date': '-',
+          'open': '-',
+          'high': '-',
+          'low': '-',
+          'close': '-',
+        };
+
+        _isLoadingGoldData = false;
+      });
+    }
+  }
 
   // ============================================================
   // BUILD
@@ -177,10 +303,6 @@ class DashboardScreen extends StatelessWidget {
                     'Hitung keuntungan transaksi '
                     'emas berdasarkan data yang '
                     'kamu masukkan.',
-
-                // ==============================================
-                // NAVIGASI KE RUMUS EMAS FISIK
-                // ==============================================
                 onFormulaTap: () {
                   Navigator.push(
                     context,
@@ -204,10 +326,6 @@ class DashboardScreen extends StatelessWidget {
                     'Tentukan indikasi BUY atau '
                     'SELL berdasarkan nilai Pivot '
                     'Point.',
-
-                // ==============================================
-                // PIVOT MASIH COMING SOON
-                // ==============================================
                 onFormulaTap: () {
                   Navigator.push(
                     context,
@@ -231,6 +349,20 @@ class DashboardScreen extends StatelessWidget {
   // ============================================================
 
   Widget _buildGoldPriceCard(BuildContext context) {
+    // ==========================================================
+    // AMBIL DATA TERBARU DARI HISTORICAL API SERVICE
+    // ==========================================================
+
+    final String latestDate = _latestGoldData['date'] ?? '-';
+
+    final String latestOpen = _latestGoldData['open'] ?? '-';
+
+    final String latestHigh = _latestGoldData['high'] ?? '-';
+
+    final String latestLow = _latestGoldData['low'] ?? '-';
+
+    final String latestClose = _latestGoldData['close'] ?? '-';
+
     return Container(
       width: double.infinity,
 
@@ -285,8 +417,8 @@ class DashboardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
 
-                  children: const [
-                    Text(
+                  children: [
+                    const Text(
                       'LGD Daily',
                       style: TextStyle(
                         fontSize: 17,
@@ -295,11 +427,17 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
 
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
                     Text(
-                      '21 Aug 2026',
-                      style: TextStyle(fontSize: 13, color: Colors.black54),
+                      _isLoadingGoldData
+                          ? 'Memuat data...'
+                          : _formatLatestDate(latestDate),
+
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
                     ),
                   ],
                 ),
@@ -336,11 +474,17 @@ class DashboardScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _buildPriceItem(label: 'OPEN', value: '4524.00'),
+                child: _buildPriceItem(
+                  label: 'OPEN',
+                  value: _isLoadingGoldData ? '...' : latestOpen,
+                ),
               ),
 
               Expanded(
-                child: _buildPriceItem(label: 'HIGH', value: '4632.10'),
+                child: _buildPriceItem(
+                  label: 'HIGH',
+                  value: _isLoadingGoldData ? '...' : latestHigh,
+                ),
               ),
             ],
           ),
@@ -350,11 +494,17 @@ class DashboardScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _buildPriceItem(label: 'LOW', value: '4508.97'),
+                child: _buildPriceItem(
+                  label: 'LOW',
+                  value: _isLoadingGoldData ? '...' : latestLow,
+                ),
               ),
 
               Expanded(
-                child: _buildPriceItem(label: 'CLOSE', value: '4610.81'),
+                child: _buildPriceItem(
+                  label: 'CLOSE',
+                  value: _isLoadingGoldData ? '...' : latestClose,
+                ),
               ),
             ],
           ),
@@ -414,6 +564,38 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // ============================================================
+  // FORMAT TANGGAL
+  // ============================================================
+
+  String _formatLatestDate(String date) {
+    if (date == '-' || date.isEmpty) {
+      return '-';
+    }
+
+    try {
+      final DateTime parsedDate = DateTime.parse(date);
+
+      final String day = parsedDate.day.toString().padLeft(2, '0');
+
+      final String month = parsedDate.month.toString().padLeft(2, '0');
+
+      final String year = parsedDate.year.toString();
+
+      return '$day/$month/$year';
+    } catch (_) {
+      // ========================================================
+      // JIKA FORMAT TANGGAL SUDAH DALAM BENTUK STRING
+      // ========================================================
+
+      if (date.length >= 10) {
+        return date.substring(0, 10);
+      }
+
+      return date;
+    }
   }
 
   // ============================================================
@@ -529,7 +711,7 @@ class DashboardScreen extends StatelessWidget {
             height: 52,
 
             child: ElevatedButton(
-              onPressed: onGoToCalculator,
+              onPressed: widget.onGoToCalculator,
 
               style: ElevatedButton.styleFrom(
                 backgroundColor: orangeColor,
@@ -572,10 +754,6 @@ class DashboardScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     required String description,
-
-    // ==========================================================
-    // CALLBACK LIHAT RUMUS
-    // ==========================================================
     required VoidCallback onFormulaTap,
   }) {
     return Container(
