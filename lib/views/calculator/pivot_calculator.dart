@@ -215,106 +215,94 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F0),
+  return Scaffold(
+    backgroundColor: const Color(0xFFFFF8F0),
 
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
+    // ==========================================================
+    // APP BAR
+    // ==========================================================
+    appBar: AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      centerTitle: true,
 
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(1),
+        child: Divider(
+          height: 1,
+          thickness: 1,
+          color: Color(0xFFE5E5E5),
+        ),
+      ),
 
-          child: Form(
-            key: _formKey,
+      leading: IconButton(
+        onPressed: () {
+          if (widget.onBack != null) {
+            widget.onBack!();
+          } else {
+            Navigator.pop(context);
+          }
+        },
+        icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Color(0xFF3D2B1F),
+            size: 25,
+          ),
+        ),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      title: const Text(
+        'Pivot Point',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFFF28C28),
+        ),
+      ),
+    ),
+ // ==========================================================
+    // BODY
+    // ==========================================================
+    body: SafeArea(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
 
-              children: [
-                // ==================================================
-                // HEADER
-                // ==================================================
-                Row(
-                  children: [
-                    // TOMBOL BACK
-                    IconButton(
-                      onPressed: () {
-                        if (widget.onBack != null) {
-                          widget.onBack!();
-                        } else {
-                          Navigator.pop(context);
-                        }
-                      },
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 22,
-                        color: Color(0xFF333333),
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 16,
+        ),
 
-                    const SizedBox(width: 16),
+        child: Form(
+          key: _formKey,
 
-                    Image.asset(
-                      'assets/images/logo.png',
-                      width: 42,
-                      height: 42,
-                      fit: BoxFit.contain,
-                    ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
 
-                    const SizedBox(width: 10),
-
-                    const Text(
-                      'AURUM',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFF28C28),
-                        letterSpacing: 1,
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.notifications_none_rounded,
-                        size: 28,
-                        color: Color(0xFF333333),
-                      ),
-                    ),
-                  ],
+            children: [
+              // ==================================================
+              // TITLE
+              // ==================================================
+              const Text(
+                'Hitung Pivot Point',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF222222),
                 ),
+              ),
 
-                const SizedBox(height: 35),
+              const SizedBox(height: 8),
 
-                // ==================================================
-                // TITLE
-                // ==================================================
-                const Text(
-                  'Pivot Point',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFF28C28),
-                  ),
+              const Text(
+                'Masukkan data Open, High, Low, dan Close '
+                'untuk menghitung Pivot Point.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF777777),
+                  height: 1.5,
                 ),
+              ),
 
-                const SizedBox(height: 8),
-
-                const Text(
-                  'Masukkan data Open, High, Low, dan Close '
-                  'untuk menghitung Pivot Point.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF777777),
-                    height: 1.5,
-                  ),
-                ),
-
-                const SizedBox(height: 30),
+              const SizedBox(height: 30),
 
                 // ==================================================
                 // OPEN

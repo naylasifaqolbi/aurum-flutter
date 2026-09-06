@@ -1,27 +1,80 @@
-/*
-|--------------------------------------------------------------------------
-| NEWSMAKER SERVICE
-|--------------------------------------------------------------------------
-*/
-
 const https = require('https');
+
+// ============================================================
+// NEWSMAKER API
+// ============================================================
 
 const NEWSMAKER_URL =
   'https://www.newsmaker.id/api/historical-data';
 
-/*
-|--------------------------------------------------------------------------
-| GET HISTORICAL DATA FROM NEWSMAKER
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// KATEGORI YANG DIPERBOLEHKAN
+// ============================================================
+
+const AVAILABLE_CATEGORIES = [
+  'LGD Daily',
+  'HSI Daily',
+  'SNI Daily',
+];
+
+const DEFAULT_CATEGORY = 'LGD Daily';
+
+// ============================================================
+// NORMALIZE CATEGORY
+// ============================================================
+
+function normalizeCategory(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase();
+}
+
+// ============================================================
+// CARI NAMA KATEGORI RESMI
+// ============================================================
+
+function getCanonicalCategory(category) {
+  const normalized = normalizeCategory(category);
+
+  return (
+    AVAILABLE_CATEGORIES.find(
+      (item) => normalizeCategory(item) === normalized
+    ) ?? null
+  );
+}
+
+// ============================================================
+// GET HISTORICAL DATA
+// ============================================================
 
 async function getHistoricalData({
+  category = DEFAULT_CATEGORY,
   startDate,
   endDate,
   page = 1,
   limit = 10,
 }) {
   return new Promise((resolve, reject) => {
+    // ========================================================
+    // VALIDASI CATEGORY
+    // ========================================================
+
+    const selectedCategory =
+      getCanonicalCategory(category);
+
+    if (!selectedCategory) {
+      return reject(
+        new Error(
+          `Kategori tidak tersedia: ${category}. ` +
+          `Kategori yang tersedia: ${AVAILABLE_CATEGORIES.join(', ')}`
+        )
+      );
+    }
+
+    // ========================================================
+    // REQUEST KE NEWSMAKER
+    // ========================================================
+
     const request = https.get(
       NEWSMAKER_URL,
       {
@@ -35,17 +88,23 @@ async function getHistoricalData({
 
         response.setEncoding('utf8');
 
+        // ======================================================
+        // TERIMA DATA
+        // ======================================================
+
         response.on('data', (chunk) => {
           body += chunk;
         });
 
+        // ======================================================
+        // SELESAI
+        // ======================================================
+
         response.on('end', () => {
           try {
-            /*
-            |--------------------------------------------------------------------------
-            | CEK HTTP STATUS
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // VALIDASI STATUS HTTP
+            // ==================================================
 
             if (response.statusCode !== 200) {
               return reject(
@@ -55,11 +114,9 @@ async function getHistoricalData({
               );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | CEK RESPONSE KOSONG
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // VALIDASI BODY
+            // ==================================================
 
             if (!body || body.trim() === '') {
               return reject(
@@ -69,11 +126,9 @@ async function getHistoricalData({
               );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | PARSE JSON
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // PARSE JSON
+            // ==================================================
 
             let result;
 
@@ -92,11 +147,9 @@ async function getHistoricalData({
               );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | CEK STATUS API NEWSMAKER
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // VALIDASI STATUS DARI API
+            // ==================================================
 
             if (
               result.status !== undefined &&
@@ -110,84 +163,65 @@ async function getHistoricalData({
               );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | AMBIL DATA
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // AMBIL DATA
+            // ==================================================
 
             let data = Array.isArray(result.data)
               ? result.data
               : [];
 
-            /*
-            |--------------------------------------------------------------------------
-            | FILTER CATEGORY
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // FILTER BERDASARKAN CATEGORY
+            // ==================================================
 
             data = data.filter((item) => {
               return (
-                item.category === 'LGD Daily' ||
-                item.category === 'LGD DAILY' ||
-                item.category === 'lgd daily'
+                normalizeCategory(item.category) ===
+                normalizeCategory(selectedCategory)
               );
             });
 
-            /*
-            |--------------------------------------------------------------------------
-            | NORMALISASI DATA
-            |--------------------------------------------------------------------------
-            |
-            | Data dari Newsmaker kemungkinan menggunakan:
-            | tanggal, open, high, low, close
-            |
-            | Flutter akan menerima:
-            | date, open, high, low, close
-            |
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // NORMALISASI DATA
+            // ==================================================
 
-            data = data.map((item) => {
-              return {
-                date:
-                  item.date ??
-                  item.tanggal ??
-                  item.Date ??
-                  item.Tanggal ??
-                  '-',
+            data = data.map((item) => ({
+              date:
+                item.date ??
+                item.tanggal ??
+                item.Date ??
+                item.Tanggal ??
+                '-',
 
-                open:
-                  item.open ??
-                  item.Open ??
-                  '-',
+              open:
+                item.open ??
+                item.Open ??
+                '-',
 
-                high:
-                  item.high ??
-                  item.High ??
-                  '-',
+              high:
+                item.high ??
+                item.High ??
+                '-',
 
-                low:
-                  item.low ??
-                  item.Low ??
-                  '-',
+              low:
+                item.low ??
+                item.Low ??
+                '-',
 
-                close:
-                  item.close ??
-                  item.Close ??
-                  '-',
+              close:
+                item.close ??
+                item.Close ??
+                '-',
 
-                category:
-                  item.category ??
-                  'LGD Daily',
-              };
-            });
+              category:
+                item.category ??
+                selectedCategory,
+            }));
 
-            /*
-            |--------------------------------------------------------------------------
-            | FILTER START DATE
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // FILTER START DATE
+            // ==================================================
 
             if (startDate) {
               data = data.filter((item) => {
@@ -198,11 +232,9 @@ async function getHistoricalData({
               });
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | FILTER END DATE
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // FILTER END DATE
+            // ==================================================
 
             if (endDate) {
               data = data.filter((item) => {
@@ -213,11 +245,10 @@ async function getHistoricalData({
               });
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | SORT TERBARU
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // SORT DATA
+            // TERBARU → TERLAMA
+            // ==================================================
 
             data.sort((a, b) => {
               return (
@@ -226,17 +257,18 @@ async function getHistoricalData({
               );
             });
 
-            /*
-            |--------------------------------------------------------------------------
-            | PAGINATION
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // PAGINATION
+            // ==================================================
 
             const total = data.length;
 
             const safeLimit = Math.max(
               1,
-              Math.min(Number(limit) || 10, 100)
+              Math.min(
+                Number(limit) || 10,
+                100
+              )
             );
 
             const safePage = Math.max(
@@ -244,11 +276,10 @@ async function getHistoricalData({
               Number(page) || 1
             );
 
-            const totalPages =
-              Math.max(
-                1,
-                Math.ceil(total / safeLimit)
-              );
+            const totalPages = Math.max(
+              1,
+              Math.ceil(total / safeLimit)
+            );
 
             const currentPage = Math.min(
               safePage,
@@ -256,25 +287,25 @@ async function getHistoricalData({
             );
 
             const startIndex =
-              (currentPage - 1) * safeLimit;
+              (currentPage - 1) *
+              safeLimit;
 
-            const paginatedData = data.slice(
-              startIndex,
-              startIndex + safeLimit
-            );
+            const paginatedData =
+              data.slice(
+                startIndex,
+                startIndex + safeLimit
+              );
 
-            /*
-            |--------------------------------------------------------------------------
-            | RESPONSE
-            |--------------------------------------------------------------------------
-            */
+            // ==================================================
+            // RESPONSE
+            // ==================================================
 
             resolve({
               status: 200,
 
               message: 'OK',
 
-              category: 'LGD Daily',
+              category: selectedCategory,
 
               data: paginatedData,
 
@@ -298,11 +329,9 @@ async function getHistoricalData({
       }
     );
 
-    /*
-    |--------------------------------------------------------------------------
-    | REQUEST ERROR
-    |--------------------------------------------------------------------------
-    */
+    // ========================================================
+    // REQUEST ERROR
+    // ========================================================
 
     request.on('error', (error) => {
       reject(
@@ -312,11 +341,9 @@ async function getHistoricalData({
       );
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | TIMEOUT
-    |--------------------------------------------------------------------------
-    */
+    // ========================================================
+    // TIMEOUT
+    // ========================================================
 
     request.setTimeout(15000, () => {
       request.destroy();
@@ -330,12 +357,12 @@ async function getHistoricalData({
   });
 }
 
-/*
-|--------------------------------------------------------------------------
-| EXPORT
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// EXPORT
+// ============================================================
 
 module.exports = {
   getHistoricalData,
+  AVAILABLE_CATEGORIES,
+  DEFAULT_CATEGORY,
 };

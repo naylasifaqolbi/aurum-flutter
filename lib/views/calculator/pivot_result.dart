@@ -121,8 +121,44 @@ class PivotResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ==================================================
+    // HEADER
+    // ==================================================
     return Scaffold(
       backgroundColor: backgroundColor,
+
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
+        ),
+
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Color(0xFF3D2B1F),
+            size: 25,
+          ),
+        ),
+
+        title: const Text(
+          'Hasil Pivot Point',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: orangeColor,
+          ),
+        ),
+      ),
 
       body: SafeArea(
         child: SingleChildScrollView(
@@ -134,46 +170,6 @@ class PivotResult extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-              // ==================================================
-              // HEADER
-              // ==================================================
-              Row(
-                children: [
-                  Image.asset(
-                    'assets/images/logo.png',
-                    width: 42,
-                    height: 42,
-                    fit: BoxFit.contain,
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  const Text(
-                    'AURUM',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: orangeColor,
-                      letterSpacing: 1,
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  IconButton(
-                    onPressed: () {},
-
-                    icon: const Icon(
-                      Icons.notifications_none_rounded,
-                      size: 28,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 30),
-
               // ==================================================
               // TITLE
               // ==================================================

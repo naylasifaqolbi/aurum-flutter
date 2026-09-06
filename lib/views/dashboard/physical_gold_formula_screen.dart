@@ -21,27 +21,35 @@ class PhysicalGoldFormulaScreen extends StatelessWidget {
       // APP BAR
       // ========================================================
       appBar: AppBar(
-        backgroundColor: backgroundColor,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
+
+        toolbarHeight: 56,
 
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
           },
 
-          icon: const Icon(Icons.arrow_back_rounded, color: darkBrown),
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF3D2B1F)),
         ),
 
         title: const Text(
           'Rumus Emas Fisik',
           style: TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: darkBrown,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFF28C28),
           ),
         ),
 
-        centerTitle: false,
+        centerTitle: true,
+
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
+        ),
       ),
 
       // ========================================================

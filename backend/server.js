@@ -1,301 +1,242 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+const dotenv = require('dotenv');
 
 const {
   getHistoricalData,
+  AVAILABLE_CATEGORIES,
+  DEFAULT_CATEGORY,
 } = require('./services/newsmaker_service');
+
+// ============================================================
+// CONFIG
+// ============================================================
+
+dotenv.config();
 
 const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-/*
-|--------------------------------------------------------------------------
-| MIDDLEWARE
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// MIDDLEWARE
+// ============================================================
 
-app.use(cors());
+app.use(
+  cors({
+    origin: '*',
+  })
+);
 
 app.use(express.json());
 
-/*
-|--------------------------------------------------------------------------
-| HEALTH CHECK
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// ROOT / HEALTH CHECK
+// ============================================================
 
 app.get('/', (req, res) => {
-  res.json({
+  res.status(200).json({
     success: true,
-    message: 'AURUM Historical Gold API is running',
-    server_time: new Date().toISOString(),
+    message: 'Aurum Backend API is running.',
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| HISTORICAL GOLD
-|--------------------------------------------------------------------------
-|
-| GET:
-|
-| http://localhost:3000/api/historical-gold
-|
-| Filter:
-|
-| ?start_date=2026-08-01
-|
-| ?start_date=2026-08-01&end_date=2026-08-31
-|
-| Pagination:
-|
-| ?page=1&limit=10
-|
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// HISTORICAL DATA
+// ============================================================
 
-app.get(
-  '/api/historical-gold',
-  async (req, res) => {
-    try {
-      const {
-        start_date,
-        end_date,
-        page = 1,
-        limit = 10,
-      } = req.query;
+app.get('/api/historical-gold', async (req, res) => {
+  try {
+    // ========================================================
+    // QUERY PARAMETER
+    // ========================================================
 
-      /*
-      |--------------------------------------------------------------------------
-      | VALIDASI PAGE
-      |--------------------------------------------------------------------------
-      */
+    const {
+      category,
+      start_date,
+      end_date,
+      page = '1',
+      limit = '10',
+    } = req.query;
 
-      const parsedPage = Number(page);
+    // ========================================================
+    // CATEGORY
+    // DEFAULT = LGD DAILY
+    // ========================================================
 
-      if (
-        !Number.isInteger(parsedPage) ||
-        parsedPage < 1
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            'Parameter page tidak valid.',
-        });
-      }
+    const requestedCategory =
+      category?.toString().trim() ||
+      DEFAULT_CATEGORY;
 
-      /*
-      |--------------------------------------------------------------------------
-      | VALIDASI LIMIT
-      |--------------------------------------------------------------------------
-      */
+    // ========================================================
+    // CARI CATEGORY RESMI
+    // CASE INSENSITIVE
+    // ========================================================
 
-      const parsedLimit = Number(limit);
-
-      if (
-        !Number.isInteger(parsedLimit) ||
-        parsedLimit < 1 ||
-        parsedLimit > 100
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            'Parameter limit harus antara 1 sampai 100.',
-        });
-      }
-
-      /*
-      |--------------------------------------------------------------------------
-      | REQUEST KE NEWSMAKER
-      |--------------------------------------------------------------------------
-      */
-
-      console.log('');
-      console.log(
-        '======================================'
+    const selectedCategory =
+      AVAILABLE_CATEGORIES.find(
+        (item) =>
+          item.toLowerCase() ===
+          requestedCategory.toLowerCase()
       );
 
-      console.log(
-        ' REQUEST HISTORICAL DATA'
-      );
+    // ========================================================
+    // CATEGORY TIDAK VALID
+    // ========================================================
 
-      console.log(
-        '======================================'
-      );
-
-      console.log(
-        'Start date:',
-        start_date || 'Semua'
-      );
-
-      console.log(
-        'End date:',
-        end_date || 'Semua'
-      );
-
-      console.log(
-        'Page:',
-        parsedPage
-      );
-
-      console.log(
-        'Limit:',
-        parsedLimit
-      );
-
-      /*
-      |--------------------------------------------------------------------------
-      | GET DATA
-      |--------------------------------------------------------------------------
-      */
-
-      const result =
-        await getHistoricalData({
-          startDate: start_date,
-
-          endDate: end_date,
-
-          page: parsedPage,
-
-          limit: parsedLimit,
-        });
-
-      /*
-      |--------------------------------------------------------------------------
-      | RESPONSE KE FLUTTER
-      |--------------------------------------------------------------------------
-      */
-
-      return res.status(200).json({
-        success: true,
-
-        message:
-          'Historical gold data retrieved successfully',
-
-        ...result,
-      });
-    } catch (error) {
-      /*
-      |--------------------------------------------------------------------------
-      | ERROR
-      |--------------------------------------------------------------------------
-      */
-
-      console.error('');
-
-      console.error(
-        '======================================'
-      );
-
-      console.error(
-        ' HISTORICAL API ERROR'
-      );
-
-      console.error(
-        '======================================'
-      );
-
-      console.error(
-        error.message
-      );
-
-      return res.status(500).json({
+    if (!selectedCategory) {
+      return res.status(400).json({
         success: false,
 
         message:
-          'Failed to retrieve historical gold data',
+          `Kategori "${requestedCategory}" tidak tersedia.`,
 
-        error: error.message,
+        available_categories:
+          AVAILABLE_CATEGORIES,
       });
     }
-  }
-);
 
-/*
-|--------------------------------------------------------------------------
-| 404
-|--------------------------------------------------------------------------
-*/
+    // ========================================================
+    // VALIDASI PAGE
+    // ========================================================
+
+    const parsedPage =
+      Number.parseInt(page, 10);
+
+    if (
+      Number.isNaN(parsedPage) ||
+      parsedPage < 1
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Parameter page harus berupa angka >= 1.',
+      });
+    }
+
+    // ========================================================
+    // VALIDASI LIMIT
+    // ========================================================
+
+    const parsedLimit =
+      Number.parseInt(limit, 10);
+
+    if (
+      Number.isNaN(parsedLimit) ||
+      parsedLimit < 1 ||
+      parsedLimit > 100
+    ) {
+      return res.status(400).json({
+        success: false,
+
+        message:
+          'Parameter limit harus berada antara 1 sampai 100.',
+      });
+    }
+
+    // ========================================================
+    // LOG
+    // ========================================================
+
+    console.log(
+      `Historical request: ${selectedCategory} | ` +
+      `page=${parsedPage} | ` +
+      `limit=${parsedLimit} | ` +
+      `start=${start_date || '-'} | ` +
+      `end=${end_date || '-'}`
+    );
+
+    // ========================================================
+    // GET DATA
+    // ========================================================
+
+    const result =
+      await getHistoricalData({
+        category: selectedCategory,
+
+        startDate: start_date,
+
+        endDate: end_date,
+
+        page: parsedPage,
+
+        limit: parsedLimit,
+      });
+
+    // ========================================================
+    // RESPONSE
+    // ========================================================
+
+    return res.status(200).json({
+      success: true,
+
+      message:
+        'Historical data retrieved successfully',
+
+      ...result,
+    });
+  } catch (error) {
+    console.error(
+      'Historical API Error:',
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+
+      message:
+        error.message ||
+        'Gagal mengambil data historical.',
+    });
+  }
+});
+
+// ============================================================
+// 404
+// ============================================================
 
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-
-    message:
-      'Endpoint tidak ditemukan.',
+    message: 'Endpoint tidak ditemukan.',
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| GLOBAL ERROR HANDLER
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// GLOBAL ERROR HANDLER
+// ============================================================
 
 app.use(
-  (
-    error,
-    req,
-    res,
-    next
-  ) => {
+  (error, req, res, next) => {
     console.error(
-      'Global Error:',
+      'Unhandled error:',
       error
     );
 
     res.status(500).json({
       success: false,
-
       message:
+        error.message ||
         'Internal server error.',
-
-      error:
-        error.message,
     });
   }
 );
 
-/*
-|--------------------------------------------------------------------------
-| SERVER
-|--------------------------------------------------------------------------
-*/
+// ============================================================
+// START SERVER
+// ============================================================
 
 app.listen(
   PORT,
   '0.0.0.0',
   () => {
-    console.log('');
-
     console.log(
-      '======================================'
+      `Aurum Backend running on port ${PORT}`
     );
 
     console.log(
-      ' AURUM HISTORICAL GOLD BACKEND'
+      'Available historical categories:',
+      AVAILABLE_CATEGORIES.join(', ')
     );
-
-    console.log(
-      '======================================'
-    );
-
-    console.log(
-      `Server running on http://localhost:${PORT}`
-    );
-
-    console.log(
-      `Historical endpoint: http://localhost:${PORT}/api/historical-gold`
-    );
-
-    console.log('');
-
-    console.log(
-      'Server siap menerima request dari Flutter.'
-    );
-
-    console.log('');
   }
 );

@@ -150,6 +150,46 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F0),
 
+      // ==========================================
+      // HEADER
+      // ==========================================
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
+        ),
+
+        leading: IconButton(
+          onPressed: () {
+            if (widget.onBack != null) {
+              widget.onBack!();
+            } else {
+              Navigator.pop(context);
+            }
+          },
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Color(0xFF3D2B1F),
+            size: 25,
+          ),
+        ),
+
+        title: const Text(
+          'Emas Fisik',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFF28C28),
+          ),
+        ),
+      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -161,67 +201,7 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
               crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
-                // ==========================================
-                // HEADER
-                // ==========================================
-                Row(
-                  children: [
-                    // TOMBOL BACK
-                    IconButton(
-                      onPressed: () {
-                        if (widget.onBack != null) {
-                          widget.onBack!();
-                        } else {
-                          Navigator.pop(context);
-                        }
-                      },
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 22,
-                        color: Color(0xFF333333),
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-
-                    const SizedBox(width: 16),
-
-                    Image.asset(
-                      'assets/images/logo.png',
-                      width: 42,
-                      height: 42,
-                      fit: BoxFit.contain,
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    const Text(
-                      'AURUM',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFF28C28),
-                        letterSpacing: 1,
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    IconButton(
-                      onPressed: () {
-                        // Fitur notifikasi akan dibuat nanti.
-                      },
-                      icon: const Icon(
-                        Icons.notifications_none_rounded,
-                        size: 28,
-                        color: Color(0xFF333333),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 35),
-
+                
                 // ==========================================
                 // TITLE
                 // ==========================================
