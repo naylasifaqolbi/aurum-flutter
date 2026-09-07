@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'physical_gold_history_detail.dart';
 import 'pivot_history_detail.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
   // ============================================================
   // COLOR
   // ============================================================
@@ -13,6 +18,8 @@ class HistoryScreen extends StatelessWidget {
   static const Color backgroundColor = Color(0xFFFFF8F0);
   static const Color orangeColor = Color(0xFFF28C28);
   static const Color darkBrown = Color(0xFF3D2B1F);
+
+  String _selectedFilter = 'Semua';
 
   @override
   Widget build(BuildContext context) {
@@ -91,15 +98,15 @@ class HistoryScreen extends StatelessWidget {
               // ==================================================
               Row(
                 children: [
-                  _buildFilter(label: 'Semua', selected: true),
+                  _buildFilter(label: 'Semua'),
 
                   const SizedBox(width: 10),
 
-                  _buildFilter(label: 'Emas Fisik', selected: false),
+                  _buildFilter(label: 'Emas Fisik'),
 
                   const SizedBox(width: 10),
 
-                  _buildFilter(label: 'Pivot Point', selected: false),
+                  _buildFilter(label: 'Pivot Point'),
                 ],
               ),
 
@@ -108,77 +115,82 @@ class HistoryScreen extends StatelessWidget {
               // ==================================================
               // HISTORY 1 - EMAS
               // ==================================================
-              _buildHistoryCard(
-                context: context,
-                type: 'EMAS FISIK',
-                date: '24 Okt 2026, 14:32',
-                result: 'Profit',
-                value: '+Rp 30.000.000',
-                subtitle1: 'Harga Beli/Jual',
-                subtitleValue1: '1.250k / 1.310k',
-                subtitle2: 'Modal',
-                subtitleValue2: 'Rp 625.000.000',
-                icon: Icons.monetization_on_outlined,
-                iconColor: orangeColor,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PhysicalGoldHistoryDetail(),
-                    ),
-                  );
-                },
-              ),
+              if (_selectedFilter == 'Semua' || _selectedFilter == 'Emas Fisik')
+                _buildHistoryCard(
+                  context: context,
+                  type: 'EMAS FISIK',
+                  date: '24 Okt 2026, 14:32',
+                  result: 'Profit',
+                  value: '+Rp 30.000.000',
+                  subtitle1: 'Harga Beli/Jual',
+                  subtitleValue1: '1.250k / 1.310k',
+                  subtitle2: 'Modal',
+                  subtitleValue2: 'Rp 625.000.000',
+                  icon: Icons.monetization_on_outlined,
+                  iconColor: orangeColor,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PhysicalGoldHistoryDetail(),
+                      ),
+                    );
+                  },
+                ),
 
               const SizedBox(height: 16),
 
               // ==================================================
               // HISTORY 2 - PIVOT
               // ==================================================
-              _buildHistoryCard(
-                context: context,
-                type: 'PIVOT POINT',
-                date: '24 Okt 2026, 09:15',
-                result: 'Pivot Point (PP)',
-                value: '1972.80',
-                subtitle1: 'High / Low / Close',
-                subtitleValue1: '1985 / 1960 / 1972',
-                icon: Icons.show_chart_rounded,
-                iconColor: orangeColor,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PivotHistoryDetail(),
-                    ),
-                  );
-                },
-              ),
+              if (_selectedFilter == 'Semua' ||
+                  _selectedFilter == 'Pivot Point')
+                _buildHistoryCard(
+                  context: context,
+                  type: 'PIVOT POINT',
+                  date: '24 Okt 2026, 09:15',
+                  result: 'Pivot Point (PP)',
+                  value: '1972.80',
+                  subtitle1: 'High / Low / Close',
+                  subtitleValue1: '1985 / 1960 / 1972',
+                  icon: Icons.show_chart_rounded,
+                  iconColor: orangeColor,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PivotHistoryDetail(),
+                      ),
+                    );
+                  },
+                ),
 
               const SizedBox(height: 16),
 
               // ==================================================
               // HISTORY 3 - PIVOT
               // ==================================================
-              _buildHistoryCard(
-                context: context,
-                type: 'PIVOT POINT',
-                date: '24 Okt 2026, 09:15',
-                result: 'Pivot Point (PP)',
-                value: '1234.00',
-                subtitle1: 'High / Low / Close',
-                subtitleValue1: '1980 / 1955 / 1975',
-                icon: Icons.show_chart_rounded,
-                iconColor: orangeColor,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PivotHistoryDetail(),
-                    ),
-                  );
-                },
-              ),
+              if (_selectedFilter == 'Semua' ||
+                  _selectedFilter == 'Pivot Point')
+                _buildHistoryCard(
+                  context: context,
+                  type: 'PIVOT POINT',
+                  date: '24 Okt 2026, 09:15',
+                  result: 'Pivot Point (PP)',
+                  value: '1234.00',
+                  subtitle1: 'High / Low / Close',
+                  subtitleValue1: '1980 / 1955 / 1975',
+                  icon: Icons.show_chart_rounded,
+                  iconColor: orangeColor,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PivotHistoryDetail(),
+                      ),
+                    );
+                  },
+                ),
 
               const SizedBox(height: 30),
             ],
@@ -192,26 +204,36 @@ class HistoryScreen extends StatelessWidget {
   // FILTER
   // ============================================================
 
-  Widget _buildFilter({required String label, required bool selected}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+  Widget _buildFilter({required String label}) {
+    final bool selected = _selectedFilter == label;
 
-      decoration: BoxDecoration(
-        color: selected ? orangeColor : Colors.white,
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFilter = label;
+        });
+      },
 
-        borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
 
-        border: Border.all(
-          color: selected ? orangeColor : const Color(0xFFE5D9CE),
+        decoration: BoxDecoration(
+          color: selected ? orangeColor : Colors.white,
+
+          borderRadius: BorderRadius.circular(20),
+
+          border: Border.all(
+            color: selected ? orangeColor : const Color(0xFFE5D9CE),
+          ),
         ),
-      ),
 
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: selected ? Colors.white : const Color(0xFF777777),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : const Color(0xFF777777),
+          ),
         ),
       ),
     );

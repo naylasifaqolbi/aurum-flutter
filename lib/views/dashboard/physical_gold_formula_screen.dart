@@ -219,25 +219,8 @@ class PhysicalGoldFormulaScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-          // ICON
-          Container(
-            width: 52,
-            height: 52,
 
-            decoration: BoxDecoration(
-              color: lightOrange,
-              borderRadius: BorderRadius.circular(15),
-            ),
-
-            child: const Icon(
-              Icons.monetization_on_outlined,
-              color: orangeColor,
-              size: 29,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
+          
           const Text(
             'Emas Fisik',
             style: TextStyle(

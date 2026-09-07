@@ -859,7 +859,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 SizedBox(width: 5),
 
-                Icon(Icons.arrow_forward_rounded, size: 18, color: orangeColor),
+                Icon(Icons.arrow_forward_ios_rounded, size: 18, color: orangeColor),
               ],
             ),
           ],

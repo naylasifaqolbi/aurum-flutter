@@ -215,94 +215,89 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
   @override
   Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: const Color(0xFFFFF8F0),
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFF8F0),
 
-    // ==========================================================
-    // APP BAR
-    // ==========================================================
-    appBar: AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      centerTitle: true,
+      // ==========================================================
+      // APP BAR
+      // ==========================================================
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        centerTitle: true,
 
-      bottom: const PreferredSize(
-        preferredSize: Size.fromHeight(1),
-        child: Divider(
-          height: 1,
-          thickness: 1,
-          color: Color(0xFFE5E5E5),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
         ),
-      ),
 
-      leading: IconButton(
-        onPressed: () {
-          if (widget.onBack != null) {
-            widget.onBack!();
-          } else {
-            Navigator.pop(context);
-          }
-        },
-        icon: const Icon(
+        leading: IconButton(
+          onPressed: () {
+            if (widget.onBack != null) {
+              widget.onBack!();
+            } else {
+              Navigator.pop(context);
+            }
+          },
+          icon: const Icon(
             Icons.arrow_back_rounded,
             color: Color(0xFF3D2B1F),
             size: 25,
           ),
         ),
 
-      title: const Text(
-        'Pivot Point',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFFF28C28),
+        title: const Text(
+          'Pivot Point',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFF28C28),
+          ),
         ),
       ),
-    ),
- // ==========================================================
-    // BODY
-    // ==========================================================
-    body: SafeArea(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+      // ==========================================================
+      // BODY
+      // ==========================================================
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
 
-        padding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 16,
-        ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
 
-        child: Form(
-          key: _formKey,
+          child: Form(
+            key: _formKey,
 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
 
-            children: [
-              // ==================================================
-              // TITLE
-              // ==================================================
-              const Text(
-                'Hitung Pivot Point',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF222222),
+              children: [
+                // ==================================================
+                // TITLE
+                // ==================================================
+                const Text(
+                  'Hitung Pivot Point',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF222222),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-              const Text(
-                'Masukkan data Open, High, Low, dan Close '
-                'untuk menghitung Pivot Point.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF777777),
-                  height: 1.5,
+                const Text(
+                  'Masukkan data Open, High, Low, dan Close '
+                  'untuk menghitung Pivot Point.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF777777),
+                    height: 1.5,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
                 // ==================================================
                 // OPEN
