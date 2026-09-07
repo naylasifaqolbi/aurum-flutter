@@ -32,6 +32,40 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F0),
 
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        toolbarHeight: 64,
+        titleSpacing: 20,
+        // ================================================
+        // HEADER
+        // ================================================
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              width: 42,
+              height: 42,
+              fit: BoxFit.contain,
+            ),
+
+            const SizedBox(width: 10),
+
+            const Text(
+              'AURUM',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFF28C28),
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -40,46 +74,6 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-              // ================================================
-              // HEADER
-              // ================================================
-              Row(
-                children: [
-                  Image.asset(
-                    'assets/images/logo.png',
-                    width: 42,
-                    height: 42,
-                    fit: BoxFit.contain,
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  const Text(
-                    'AURUM',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFF28C28),
-                      letterSpacing: 1,
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  IconButton(
-                    onPressed: () {},
-
-                    icon: const Icon(
-                      Icons.notifications_none_rounded,
-                      size: 28,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 35),
-
               // ================================================
               // TITLE
               // ================================================
@@ -114,7 +108,13 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
                 description:
                     'Hitung keuntungan atau kerugian '
                     'dari transaksi emas fisik.',
-                page: const PhysicalGoldCalculator(),
+                page: PhysicalGoldCalculator(
+                  onBack: () {
+                    setState(() {
+                      _selectedCalculator = null;
+                    });
+                  },
+                ),
               ),
 
               const SizedBox(height: 16),
@@ -128,7 +128,13 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
                 description:
                     'Hitung Pivot Point berdasarkan '
                     'harga High, Low, dan Close.',
-                page: const PivotCalculator(),
+                page: PivotCalculator(
+                  onBack: () {
+                    setState(() {
+                      _selectedCalculator = null;
+                    });
+                  },
+                ),
               ),
 
               const SizedBox(height: 30),

@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../../services/historical_api_service.dart';
 
 class HistoricalGoldScreen extends StatefulWidget {
   const HistoricalGoldScreen({super.key});
@@ -7,55 +11,397 @@ class HistoricalGoldScreen extends StatefulWidget {
   State<HistoricalGoldScreen> createState() => _HistoricalGoldScreenState();
 }
 
-class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
+class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
+    with WidgetsBindingObserver {
   // ============================================================
   // COLOR
   // ============================================================
 
   static const Color backgroundColor = Color(0xFFFFF8F0);
+
   static const Color orangeColor = Color(0xFFF28C28);
+
   static const Color darkBrown = Color(0xFF3D2B1F);
+
   static const Color lightOrange = Color(0xFFFFE5CC);
+
+  // ============================================================
+  // CATEGORY
+  // ============================================================
+
+  static const List<String> _categories = [
+    'LGD Daily',
+    'HSI Daily',
+    'SNI Daily',
+  ];
+
+  String _selectedCategory = HistoricalApiService.defaultCategory;
 
   // ============================================================
   // DATE
   // ============================================================
 
   DateTime? _startDate;
+
   DateTime? _endDate;
 
   // ============================================================
-  // DATA HISTORICAL
-  //
-  // UNTUK SEMENTARA KOSONG
-  // NANTI DAPAT DIISI DARI API / DATABASE
+  // DATA
   // ============================================================
 
-  final List<Map<String, String>> _historicalData = [];
+  List<Map<String, String>> _historicalData = [];
 
   // ============================================================
-  // PILIH TANGGAL
+  // LOADING / ERROR
+  // ============================================================
+
+  bool _isLoading = false;
+
+  String? _errorMessage;
+
+  // ============================================================
+  // CACHE STATUS
+  // ============================================================
+
+  bool _isFromCache = false;
+
+  String? _cacheTime;
+
+  // ============================================================
+  // REQUEST LOCK
+  // ============================================================
+
+  bool _requestRunning = false;
+
+  // ============================================================
+  // PAGINATION
+  // ============================================================
+
+  int _currentPage = 1;
+
+  int _totalPages = 1;
+
+  // ============================================================
+  // AUTO REFRESH
+  // ============================================================
+
+  Timer? _autoRefreshTimer;
+
+  // ============================================================
+  // INIT
+  // ============================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
+
+    _loadHistoricalData(showLoading: true);
+
+    // ==========================================================
+    // AUTO REFRESH 5 MENIT
+    // ==========================================================
+
+    _autoRefreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      if (mounted) {
+        _loadHistoricalData(showLoading: false);
+      }
+    });
+  }
+
+  // ============================================================
+  // LIFECYCLE
+  // ============================================================
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.resumed) {
+      _loadHistoricalData(showLoading: false);
+    }
+  }
+
+  // ============================================================
+  // DISPOSE
+  // ============================================================
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
+    _autoRefreshTimer?.cancel();
+
+    super.dispose();
+  }
+
+  // ============================================================
+  // LOAD HISTORICAL DATA
+  // ============================================================
+
+  Future<void> _loadHistoricalData({bool showLoading = true}) async {
+    // ==========================================================
+    // CEGAH REQUEST DOUBLE
+    // ==========================================================
+
+    if (_requestRunning) {
+      return;
+    }
+
+    _requestRunning = true;
+
+    if (showLoading && mounted) {
+      setState(() {
+        _isLoading = true;
+
+        _errorMessage = null;
+      });
+    }
+
+    try {
+      // ========================================================
+      // TAMPILKAN CACHE TERLEBIH DAHULU
+      // ========================================================
+
+      if (showLoading) {
+        final cached = await HistoricalApiService.getCachedHistoricalData(
+          category: _selectedCategory,
+          startDate: _startDate,
+          endDate: _endDate,
+          page: _currentPage,
+          limit: 10,
+        );
+
+        if (cached != null && mounted) {
+          _applyResult(cached);
+
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+
+      // ========================================================
+      // REQUEST KE BACKEND
+      // ========================================================
+
+      final result = await HistoricalApiService.getHistoricalData(
+        category: _selectedCategory,
+        startDate: _startDate,
+        endDate: _endDate,
+        page: _currentPage,
+        limit: 10,
+      );
+
+      // ========================================================
+      // APPLY RESULT
+      // ========================================================
+
+      if (mounted) {
+        _applyResult(result);
+
+        setState(() {
+          _isLoading = false;
+
+          _errorMessage = null;
+        });
+      }
+    } catch (error) {
+      // ========================================================
+      // BACKEND OFF
+      // CACHE SUDAH DICOBA OLEH SERVICE
+      // ========================================================
+
+      if (mounted) {
+        if (_historicalData.isEmpty) {
+          setState(() {
+            _errorMessage =
+                'Tidak dapat mengambil data '
+                '$_selectedCategory.\n'
+                'Pastikan backend aktif atau '
+                'tersedia cache offline.';
+          });
+        }
+
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } finally {
+      _requestRunning = false;
+    }
+  }
+
+  // ============================================================
+  // APPLY RESULT
+  // ============================================================
+
+  void _applyResult(Map<String, dynamic> result) {
+    final dynamic rawData = result['data'];
+
+    final List<Map<String, String>> convertedData = [];
+
+    if (rawData is List) {
+      for (final item in rawData) {
+        if (item is Map) {
+          convertedData.add({
+            'date': item['date']?.toString() ?? '-',
+
+            'open': item['open']?.toString() ?? '-',
+
+            'high': item['high']?.toString() ?? '-',
+
+            'low': item['low']?.toString() ?? '-',
+
+            'close': item['close']?.toString() ?? '-',
+          });
+        }
+      }
+    }
+
+    // ==========================================================
+    // PAGINATION
+    // ==========================================================
+
+    final dynamic pagination = result['pagination'];
+
+    if (pagination is Map) {
+      _currentPage =
+          int.tryParse(pagination['current_page']?.toString() ?? '') ??
+          _currentPage;
+
+      _totalPages =
+          int.tryParse(pagination['total_pages']?.toString() ?? '') ?? 1;
+    }
+
+    // ==========================================================
+    // CACHE STATUS
+    // ==========================================================
+
+    _isFromCache = result['fromCache'] == true;
+
+    _cacheTime = result['cacheTime']?.toString();
+
+    // ==========================================================
+    // DATA
+    // ==========================================================
+
+    _historicalData = convertedData;
+  }
+
+  // ============================================================
+  // CATEGORY CHANGED
+  // ============================================================
+
+  void _onCategoryChanged(String? value) {
+    if (value == null || value == _selectedCategory) {
+      return;
+    }
+
+    setState(() {
+      _selectedCategory = value;
+
+      // Reset pagination
+      _currentPage = 1;
+
+      // Bersihkan data kategori sebelumnya
+      // agar data LGD tidak tampil saat
+      // sedang mengambil HSI / SNI.
+      _historicalData = [];
+
+      _errorMessage = null;
+
+      _isFromCache = false;
+
+      _cacheTime = null;
+    });
+
+    _loadHistoricalData(showLoading: true);
+  }
+
+  // ============================================================
+  // REFRESH
+  // ============================================================
+
+  Future<void> _refreshData() async {
+    if (_requestRunning) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+
+      _errorMessage = null;
+    });
+
+    await _loadHistoricalData(showLoading: false);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (_errorMessage == null) {
+      _showMessage('Data $_selectedCategory berhasil diperbarui.');
+    }
+  }
+
+  // ============================================================
+  // NEXT PAGE
+  // ============================================================
+
+  void _nextPage() {
+    if (_currentPage >= _totalPages) {
+      return;
+    }
+
+    setState(() {
+      _currentPage++;
+    });
+
+    _loadHistoricalData(showLoading: true);
+  }
+
+  // ============================================================
+  // PREVIOUS PAGE
+  // ============================================================
+
+  void _previousPage() {
+    if (_currentPage <= 1) {
+      return;
+    }
+
+    setState(() {
+      _currentPage--;
+    });
+
+    _loadHistoricalData(showLoading: true);
+  }
+
+  // ============================================================
+  // SELECT DATE
   // ============================================================
 
   Future<void> _selectDate({required bool isStart}) async {
-    final DateTime now = DateTime.now();
-
     final DateTime initialDate = isStart
-        ? (_startDate ?? now)
-        : (_endDate ?? _startDate ?? now);
+        ? (_startDate ?? DateTime.now())
+        : (_endDate ?? _startDate ?? DateTime.now());
 
-    final DateTime? selectedDate = await showDatePicker(
+    final DateTime? picked = await showDatePicker(
       context: context,
+
       initialDate: initialDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(now.year + 5),
+
+      firstDate: DateTime(2000),
+
+      lastDate: DateTime.now(),
+
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
               primary: orangeColor,
               onPrimary: Colors.white,
-              surface: Colors.white,
               onSurface: darkBrown,
             ),
           ),
@@ -64,67 +410,43 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
       },
     );
 
-    if (selectedDate == null) {
+    if (picked == null) {
       return;
     }
 
-    if (isStart) {
-      setState(() {
-        _startDate = selectedDate;
+    setState(() {
+      if (isStart) {
+        _startDate = picked;
 
-        if (_endDate != null && _endDate!.isBefore(selectedDate)) {
+        // Jika end date lebih kecil
+        // dari start date, reset end date.
+        if (_endDate != null && _endDate!.isBefore(picked)) {
           _endDate = null;
         }
-      });
-    } else {
-      if (_startDate != null && selectedDate.isBefore(_startDate!)) {
-        _showMessage('Tanggal akhir tidak boleh sebelum tanggal mulai.');
-        return;
+      } else {
+        _endDate = picked;
       }
 
-      setState(() {
-        _endDate = selectedDate;
-      });
-    }
+      _currentPage = 1;
+    });
+
+    _loadHistoricalData(showLoading: true);
   }
 
   // ============================================================
-  // REFRESH DATA
-  // ============================================================
-
-  void _refreshData() {
-    // ==========================================================
-    // UNTUK SEMENTARA DATA BELUM TERSEDIA
-    //
-    // NANTI:
-    // 1. Ambil data dari API
-    // 2. Filter berdasarkan tanggal
-    // 3. Masukkan hasil ke _historicalData
-    // ==========================================================
-
-    setState(() {});
-
-    _showMessage('Data historis belum tersedia.');
-  }
-
-  // ============================================================
-  // MESSAGE
+  // SHOW MESSAGE
   // ============================================================
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (!mounted) {
+      return;
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        backgroundColor: darkBrown,
+        content: Text(message),
+        backgroundColor: orangeColor,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -135,7 +457,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
   String _formatDate(DateTime? date) {
     if (date == null) {
-      return 'dd/mm/yyyy';
+      return 'Pilih tanggal';
     }
 
     final String day = date.day.toString().padLeft(2, '0');
@@ -148,6 +470,34 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   }
 
   // ============================================================
+  // FORMAT CACHE TIME
+  // ============================================================
+
+  String _formatCacheTime() {
+    if (_cacheTime == null) {
+      return '-';
+    }
+
+    try {
+      final DateTime date = DateTime.parse(_cacheTime!).toLocal();
+
+      final String day = date.day.toString().padLeft(2, '0');
+
+      final String month = date.month.toString().padLeft(2, '0');
+
+      final String year = date.year.toString();
+
+      final String hour = date.hour.toString().padLeft(2, '0');
+
+      final String minute = date.minute.toString().padLeft(2, '0');
+
+      return '$day/$month/$year $hour:$minute';
+    } catch (_) {
+      return _cacheTime!;
+    }
+  }
+
+  // ============================================================
   // BUILD
   // ============================================================
 
@@ -156,162 +506,269 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
 
-      // ========================================================
-      // APP BAR
-      // ========================================================
       appBar: AppBar(
-        backgroundColor: backgroundColor,
+        backgroundColor: orangeColor,
+
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
-
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: darkBrown,
-            size: 21,
-          ),
-        ),
 
         title: const Text(
           'Historical Data Emas',
-          style: TextStyle(
-            color: darkBrown,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
 
-        centerTitle: false,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
 
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
+        child: RefreshIndicator(
+          color: orangeColor,
 
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+          onRefresh: _refreshData,
 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
 
-            children: [
-              // ==================================================
-              // HEADER
-              // ==================================================
-              Row(
-                children: [
-                  Image.asset(
-                    'assets/images/logo.png',
-                    width: 42,
-                    height: 42,
-                    fit: BoxFit.contain,
+            padding: const EdgeInsets.all(20),
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+
+              children: [
+                // ==================================================
+                // HEADER
+                // ==================================================
+                _buildHeader(),
+
+                const SizedBox(height: 24),
+
+                // ==================================================
+                // TITLE
+                // ==================================================
+                const Text(
+                  'Historical Data Emas',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: darkBrown,
                   ),
+                ),
 
-                  const SizedBox(width: 10),
+                const SizedBox(height: 6),
 
-                  const Text(
-                    'AURUM',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: orangeColor,
-                      letterSpacing: 1,
+                const Text(
+                  'Data Historis Emas',
+                  style: TextStyle(fontSize: 15, color: Colors.black54),
+                ),
+
+                const SizedBox(height: 8),
+
+                const Text(
+                  'Lihat data historis berdasarkan '
+                  'kategori dengan informasi Open, '
+                  'High, Low, dan Close.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                    height: 1.5,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ==================================================
+                // STATUS
+                // ==================================================
+                if (_historicalData.isNotEmpty) _buildStatusCard(),
+
+                const SizedBox(height: 16),
+
+                // ==================================================
+                // FILTER
+                // ==================================================
+                _buildFilterCard(),
+
+                const SizedBox(height: 20),
+
+                // ==================================================
+                // ERROR
+                // ==================================================
+                if (_errorMessage != null) _buildErrorCard(),
+
+                // ==================================================
+                // LOADING
+                // ==================================================
+                if (_isLoading && _historicalData.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: CircularProgressIndicator(color: orangeColor),
                     ),
                   ),
 
-                  const Spacer(),
+                // ==================================================
+                // TABLE
+                // ==================================================
+                if (_historicalData.isNotEmpty) _buildDataTable(),
 
-                  IconButton(
-                    onPressed: () {},
+                // ==================================================
+                // PAGINATION
+                // ==================================================
+                if (_historicalData.isNotEmpty && _totalPages > 1)
+                  _buildPagination(),
 
-                    icon: const Icon(
-                      Icons.notifications_none_rounded,
-                      size: 28,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 28),
-
-              // ==================================================
-              // TITLE
-              // ==================================================
-              const Text(
-                'Historical Data Emas',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: orangeColor,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              const Text(
-                'Data Historis Emas',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: darkBrown,
-                ),
-              ),
-
-              const SizedBox(height: 6),
-
-              const Text(
-                'Menampilkan data harga emas berdasarkan '
-                'periode yang kamu pilih.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                  height: 1.5,
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // ==================================================
-              // FILTER
-              // ==================================================
-              _buildFilterCard(),
-
-              const SizedBox(height: 28),
-
-              // ==================================================
-              // DATA HISTORIS
-              // ==================================================
-              const Text(
-                'Data Historis',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: darkBrown,
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              if (_historicalData.isEmpty)
-                _buildEmptyDataCard()
-              else
-                _buildHistoricalTable(),
-
-              const SizedBox(height: 20),
-
-              // ==================================================
-              // PAGINATION
-              // ==================================================
-              _buildPagination(),
-
-              const SizedBox(height: 10),
-            ],
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // HEADER
+  // ============================================================
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        // ========================================================
+        // LOGO
+        // ========================================================
+        Image.asset(
+          'assets/images/logo.png',
+          width: 45,
+          height: 45,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 45,
+              height: 45,
+              decoration: BoxDecoration(
+                color: orangeColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.auto_graph_rounded, color: Colors.white),
+            );
+          },
+        ),
+
+        const SizedBox(width: 12),
+
+        // ========================================================
+        // AURUM
+        // ========================================================
+        const Expanded(
+          child: Text(
+            'AURUM',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: orangeColor,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+
+        // ========================================================
+        // NOTIFICATION
+        // ========================================================
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 8,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: orangeColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  // STATUS CARD
+  // ============================================================
+
+  Widget _buildStatusCard() {
+    return Container(
+      width: double.infinity,
+
+      padding: const EdgeInsets.all(16),
+
+      decoration: BoxDecoration(
+        color: _isFromCache ? lightOrange : Colors.white,
+
+        borderRadius: BorderRadius.circular(16),
+
+        border: Border.all(color: _isFromCache ? orangeColor : Colors.green),
+      ),
+
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: _isFromCache ? orangeColor : Colors.green,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _isFromCache ? Icons.cloud_off_rounded : Icons.cloud_done_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isFromCache ? 'Offline' : 'Online',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _isFromCache ? orangeColor : Colors.green,
+                  ),
+                ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  _isFromCache
+                      ? 'Menampilkan cache $_selectedCategory'
+                      : 'Data $_selectedCategory terbaru',
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                ),
+
+                if (_isFromCache && _cacheTime != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      'Cache: ${_formatCacheTime()}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.black45,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -329,15 +786,13 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
 
-        borderRadius: BorderRadius.circular(20),
-
-        border: Border.all(color: const Color(0xFFFFE0C2)),
+        borderRadius: BorderRadius.circular(18),
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -347,128 +802,149 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
 
         children: [
           // ======================================================
-          // KATEGORI
+          // CATEGORY TITLE
           // ======================================================
           const Text(
             'KATEGORI',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.black45,
-              letterSpacing: 0.8,
+              color: Colors.black54,
+              letterSpacing: 1,
             ),
           ),
 
           const SizedBox(height: 8),
 
+          // ======================================================
+          // CATEGORY DROPDOWN
+          // ======================================================
           Container(
-            width: double.infinity,
-
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
 
             decoration: BoxDecoration(
               color: backgroundColor,
+
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFFE0C2)),
+
+              border: Border.all(color: lightOrange),
             ),
 
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.trending_up_rounded, color: orangeColor, size: 21),
+                const Icon(
+                  Icons.trending_up_rounded,
+                  color: orangeColor,
+                  size: 22,
+                ),
 
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
 
                 Expanded(
-                  child: Text(
-                    'LGD Daily',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: darkBrown,
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedCategory,
+
+                      isExpanded: true,
+
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: orangeColor,
+                      ),
+
+                      dropdownColor: Colors.white,
+
+                      borderRadius: BorderRadius.circular(12),
+
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: darkBrown,
+                      ),
+
+                      items: _categories.map((String category) {
+                        return DropdownMenuItem<String>(
+                          value: category,
+
+                          child: Text(category),
+                        );
+                      }).toList(),
+
+                      onChanged: _isLoading ? null : _onCategoryChanged,
                     ),
                   ),
                 ),
-
-                Icon(Icons.keyboard_arrow_down_rounded, color: orangeColor),
               ],
             ),
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
 
           // ======================================================
-          // MULAI
+          // DATE FILTER
           // ======================================================
           const Text(
-            'MULAI',
+            'FILTER TANGGAL',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.black45,
-              letterSpacing: 0.8,
+              color: Colors.black54,
+              letterSpacing: 1,
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
-          _buildDateButton(
-            date: _startDate,
-            onTap: () {
-              _selectDate(isStart: true);
-            },
+          Row(
+            children: [
+              Expanded(
+                child: _buildDateButton(
+                  label: 'Dari',
+                  date: _startDate,
+                  onTap: () => _selectDate(isStart: true),
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: _buildDateButton(
+                  label: 'Sampai',
+                  date: _endDate,
+                  onTap: () => _selectDate(isStart: false),
+                ),
+              ),
+            ],
           ),
 
-          const SizedBox(height: 15),
+          const SizedBox(height: 16),
 
           // ======================================================
-          // AKHIR
-          // ======================================================
-          const Text(
-            'AKHIR',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.black45,
-              letterSpacing: 0.8,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          _buildDateButton(
-            date: _endDate,
-            onTap: () {
-              _selectDate(isStart: false);
-            },
-          ),
-
-          const SizedBox(height: 18),
-
-          // ======================================================
-          // REFRESH
+          // REFRESH BUTTON
           // ======================================================
           SizedBox(
             width: double.infinity,
-            height: 48,
 
             child: ElevatedButton.icon(
-              onPressed: _refreshData,
-
-              icon: const Icon(Icons.refresh_rounded, size: 20),
-
-              label: const Text(
-                'Refresh',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
+              onPressed: _isLoading ? null : _refreshData,
 
               style: ElevatedButton.styleFrom(
                 backgroundColor: orangeColor,
+
                 foregroundColor: Colors.white,
-                elevation: 0,
+
+                padding: const EdgeInsets.symmetric(vertical: 13),
 
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+              ),
+
+              icon: const Icon(Icons.refresh_rounded),
+
+              label: const Text(
+                'Refresh Data',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -482,50 +958,59 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   // ============================================================
 
   Widget _buildDateButton({
+    required String label,
     required DateTime? date,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
 
-      child: Container(
-        width: double.infinity,
+      borderRadius: BorderRadius.circular(12),
 
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      child: Container(
+        padding: const EdgeInsets.all(12),
 
         decoration: BoxDecoration(
           color: backgroundColor,
+
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFFFE0C2)),
+
+          border: Border.all(color: lightOrange),
         ),
 
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
-            const Icon(
-              Icons.calendar_today_outlined,
-              color: orangeColor,
-              size: 20,
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Colors.black54),
             ),
 
-            const SizedBox(width: 10),
+            const SizedBox(height: 4),
 
-            Expanded(
-              child: Text(
-                _formatDate(date),
-
-                style: TextStyle(
-                  fontSize: 14,
-
-                  color: date == null ? const Color(0xFFAAAAAA) : darkBrown,
-
-                  fontWeight: date == null
-                      ? FontWeight.normal
-                      : FontWeight.w600,
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today_rounded,
+                  size: 16,
+                  color: orangeColor,
                 ),
-              ),
-            ),
 
-            const Icon(Icons.arrow_drop_down_rounded, color: orangeColor),
+                const SizedBox(width: 6),
+
+                Expanded(
+                  child: Text(
+                    _formatDate(date),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: darkBrown,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -533,67 +1018,40 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   }
 
   // ============================================================
-  // EMPTY DATA
+  // ERROR CARD
   // ============================================================
 
-  Widget _buildEmptyDataCard() {
+  Widget _buildErrorCard() {
     return Container(
       width: double.infinity,
 
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 45),
+      padding: const EdgeInsets.all(16),
 
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.red.shade50,
 
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
 
-        border: Border.all(color: const Color(0xFFFFE0C2)),
-
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: Colors.red.shade200),
       ),
 
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
-          Container(
-            width: 62,
-            height: 62,
+          Icon(Icons.error_outline_rounded, color: Colors.red.shade700),
 
-            decoration: BoxDecoration(
-              color: lightOrange,
-              borderRadius: BorderRadius.circular(18),
+          const SizedBox(width: 10),
+
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
-
-            child: const Icon(
-              Icons.bar_chart_rounded,
-              color: orangeColor,
-              size: 32,
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          const Text(
-            'Data Belum Tersedia',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-              color: darkBrown,
-            ),
-          ),
-
-          const SizedBox(height: 7),
-
-          const Text(
-            'Data historis emas akan ditampilkan '
-            'setelah tersedia.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.5),
           ),
         ],
       ),
@@ -601,23 +1059,21 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   }
 
   // ============================================================
-  // HISTORICAL TABLE
+  // DATA TABLE
   // ============================================================
 
-  Widget _buildHistoricalTable() {
+  Widget _buildDataTable() {
     return Container(
       width: double.infinity,
 
       decoration: BoxDecoration(
         color: Colors.white,
 
-        borderRadius: BorderRadius.circular(18),
-
-        border: Border.all(color: const Color(0xFFFFE0C2)),
+        borderRadius: BorderRadius.circular(16),
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -625,78 +1081,26 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
       ),
 
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
           // ======================================================
           // TABLE HEADER
           // ======================================================
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
 
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFEAD6),
-
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(18),
-                topRight: Radius.circular(18),
-              ),
-            ),
-
-            child: const Row(
+            child: Row(
               children: [
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'Tanggal',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: darkBrown,
-                    ),
-                  ),
-                ),
+                const Icon(Icons.bar_chart_rounded, color: orangeColor),
+
+                const SizedBox(width: 8),
 
                 Expanded(
                   child: Text(
-                    'Open',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: darkBrown,
-                    ),
-                  ),
-                ),
-
-                Expanded(
-                  child: Text(
-                    'High',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: darkBrown,
-                    ),
-                  ),
-                ),
-
-                Expanded(
-                  child: Text(
-                    'Low',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: darkBrown,
-                    ),
-                  ),
-                ),
-
-                Expanded(
-                  child: Text(
-                    'Close',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 12,
+                    _selectedCategory,
+                    style: const TextStyle(
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: darkBrown,
                     ),
@@ -706,74 +1110,56 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
             ),
           ),
 
+          const Divider(height: 1),
+
           // ======================================================
-          // DATA
+          // HORIZONTAL SCROLL
           // ======================================================
-          ..._historicalData.map((data) => _buildHistoricalRow(data)),
-        ],
-      ),
-    );
-  }
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
 
-  // ============================================================
-  // HISTORICAL ROW
-  // ============================================================
-
-  Widget _buildHistoricalRow(Map<String, String> data) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFF0E5DA))),
-      ),
-
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              data['date'] ?? '-',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: darkBrown,
+            child: DataTable(
+              headingRowColor: WidgetStateProperty.resolveWith(
+                (states) => lightOrange,
               ),
-            ),
-          ),
 
-          Expanded(
-            child: Text(
-              data['open'] ?? '-',
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 11, color: darkBrown),
-            ),
-          ),
+              columnSpacing: 24,
 
-          Expanded(
-            child: Text(
-              data['high'] ?? '-',
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 11, color: darkBrown),
-            ),
-          ),
-
-          Expanded(
-            child: Text(
-              data['low'] ?? '-',
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 11, color: darkBrown),
-            ),
-          ),
-
-          Expanded(
-            child: Text(
-              data['close'] ?? '-',
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+              headingTextStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
                 color: darkBrown,
+                fontSize: 12,
               ),
+
+              dataTextStyle: const TextStyle(color: darkBrown, fontSize: 12),
+
+              columns: const [
+                DataColumn(label: Text('Tanggal')),
+
+                DataColumn(label: Text('Open')),
+
+                DataColumn(label: Text('High')),
+
+                DataColumn(label: Text('Low')),
+
+                DataColumn(label: Text('Close')),
+              ],
+
+              rows: _historicalData.map((Map<String, String> item) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text(item['date'] ?? '-')),
+
+                    DataCell(Text(item['open'] ?? '-')),
+
+                    DataCell(Text(item['high'] ?? '-')),
+
+                    DataCell(Text(item['low'] ?? '-')),
+
+                    DataCell(Text(item['close'] ?? '-')),
+                  ],
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -786,98 +1172,60 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen> {
   // ============================================================
 
   Widget _buildPagination() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Padding(
+      padding: const EdgeInsets.only(top: 18),
 
-      children: [
-        _buildPageButton(icon: Icons.chevron_left_rounded, onTap: () {}),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
 
-        const SizedBox(width: 7),
+        children: [
+          // ======================================================
+          // PREVIOUS
+          // ======================================================
+          IconButton(
+            onPressed: _currentPage > 1 ? _previousPage : null,
 
-        _buildPageNumber(number: '1', active: true),
+            style: IconButton.styleFrom(
+              backgroundColor: _currentPage > 1
+                  ? orangeColor
+                  : Colors.grey.shade300,
 
-        const SizedBox(width: 7),
+              foregroundColor: Colors.white,
+            ),
 
-        _buildPageNumber(number: '2', active: false),
+            icon: const Icon(Icons.chevron_left_rounded),
+          ),
 
-        const SizedBox(width: 7),
+          const SizedBox(width: 16),
 
-        _buildPageNumber(number: '3', active: false),
+          Text(
+            'Halaman $_currentPage '
+            'dari $_totalPages',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: darkBrown,
+            ),
+          ),
 
-        const SizedBox(width: 7),
+          const SizedBox(width: 16),
 
-        const Text(
-          '...',
-          style: TextStyle(color: Colors.black45, fontWeight: FontWeight.bold),
-        ),
+          // ======================================================
+          // NEXT
+          // ======================================================
+          IconButton(
+            onPressed: _currentPage < _totalPages ? _nextPage : null,
 
-        const SizedBox(width: 7),
+            style: IconButton.styleFrom(
+              backgroundColor: _currentPage < _totalPages
+                  ? orangeColor
+                  : Colors.grey.shade300,
 
-        _buildPageNumber(number: '24', active: false),
+              foregroundColor: Colors.white,
+            ),
 
-        const SizedBox(width: 7),
-
-        _buildPageButton(icon: Icons.chevron_right_rounded, onTap: () {}),
-      ],
-    );
-  }
-
-  // ============================================================
-  // PAGE BUTTON
-  // ============================================================
-
-  Widget _buildPageButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-
-      child: Container(
-        width: 34,
-        height: 34,
-
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFFFE0C2)),
-        ),
-
-        child: Icon(icon, size: 20, color: orangeColor),
-      ),
-    );
-  }
-
-  // ============================================================
-  // PAGE NUMBER
-  // ============================================================
-
-  Widget _buildPageNumber({required String number, required bool active}) {
-    return Container(
-      width: 34,
-      height: 34,
-
-      alignment: Alignment.center,
-
-      decoration: BoxDecoration(
-        color: active ? orangeColor : Colors.white,
-
-        borderRadius: BorderRadius.circular(10),
-
-        border: Border.all(
-          color: active ? orangeColor : const Color(0xFFFFE0C2),
-        ),
-      ),
-
-      child: Text(
-        number,
-
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-
-          color: active ? Colors.white : darkBrown,
-        ),
+            icon: const Icon(Icons.chevron_right_rounded),
+          ),
+        ],
       ),
     );
   }

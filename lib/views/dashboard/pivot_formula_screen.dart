@@ -22,15 +22,35 @@ class PivotFormulaScreen extends StatelessWidget {
       backgroundColor: backgroundColor,
 
       appBar: AppBar(
-        backgroundColor: backgroundColor,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: true,
 
-        iconTheme: const IconThemeData(color: darkBrown),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
+        ),
+
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Color(0xFF3D2B1F),
+            size: 25,
+          ),
+        ),
 
         title: const Text(
-          'Pivot Point',
-          style: TextStyle(color: darkBrown, fontWeight: FontWeight.bold),
+          'Rumus Pivot Point',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: orangeColor,
+          ),
         ),
       ),
 

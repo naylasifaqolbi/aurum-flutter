@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'pivot_result.dart';
 
 class PivotCalculator extends StatefulWidget {
-  const PivotCalculator({super.key});
+  final VoidCallback? onBack;
+
+  const PivotCalculator({super.key, this.onBack});
 
   @override
   State<PivotCalculator> createState() => _PivotCalculatorState();
@@ -216,6 +218,48 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F0),
 
+      // ==========================================================
+      // APP BAR
+      // ==========================================================
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        centerTitle: true,
+
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
+        ),
+
+        leading: IconButton(
+          onPressed: () {
+            if (widget.onBack != null) {
+              widget.onBack!();
+            } else {
+              Navigator.pop(context);
+            }
+          },
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Color(0xFF3D2B1F),
+            size: 25,
+          ),
+        ),
+
+        title: const Text(
+          'Pivot Point',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFF28C28),
+          ),
+        ),
+      ),
+      // ==========================================================
+      // BODY
+      // ==========================================================
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -230,54 +274,14 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
               children: [
                 // ==================================================
-                // HEADER
-                // ==================================================
-                Row(
-                  children: [
-                    Image.asset(
-                      'assets/images/logo.png',
-                      width: 42,
-                      height: 42,
-                      fit: BoxFit.contain,
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    const Text(
-                      'AURUM',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFF28C28),
-                        letterSpacing: 1,
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    IconButton(
-                      onPressed: () {},
-
-                      icon: const Icon(
-                        Icons.notifications_none_rounded,
-                        size: 28,
-                        color: Color(0xFF333333),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 35),
-
-                // ==================================================
                 // TITLE
                 // ==================================================
                 const Text(
-                  'Pivot Point',
+                  'Hitung Pivot Point',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFF28C28),
+                    color: Color(0xFF222222),
                   ),
                 ),
 
