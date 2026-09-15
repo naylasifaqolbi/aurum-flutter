@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services/historical_api_service.dart';
 import 'physical_gold_formula_screen.dart';
@@ -15,10 +16,10 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key, this.onGoToCalculator});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<DashboardScreen> createState() => DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class DashboardScreenState extends State<DashboardScreen> {
   // ============================================================
   // COLOR
   // ============================================================
@@ -40,6 +41,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Map<String, String> _latestGoldData = {};
 
+  String _nama = '-';
+
   // ============================================================
   // LOADING DATA
   // ============================================================
@@ -55,6 +58,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
 
     _loadLatestGoldData();
+    loadProfile();
+  }
+
+  // ============================================================
+  // LOAD PROFILE DARI SUPABASE
+  // ============================================================
+
+  Future<void> loadProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user == null) return;
+
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+
+      if (!mounted) return;
+
+      setState(() {
+        _nama = profile['name'] ?? '-';
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _nama = '-';
+      });
+    }
   }
 
   // ============================================================
@@ -219,9 +253,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               const SizedBox(height: 5),
 
-              const Text(
-                'Rosalinda',
-                style: TextStyle(
+              Text(
+                _nama,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: darkBrown,
@@ -859,7 +893,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 SizedBox(width: 5),
 
-                Icon(Icons.arrow_forward_ios_rounded, size: 18, color: orangeColor),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 18,
+                  color: orangeColor,
+                ),
               ],
             ),
           ],

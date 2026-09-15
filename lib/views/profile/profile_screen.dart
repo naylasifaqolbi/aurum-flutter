@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
@@ -6,14 +7,65 @@ import 'app_settings_screen.dart';
 import 'help_screen.dart';
 import 'account_security_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String _nama = '-';
+  String _email = '-';
+  String _phone = '-';
+  String? _avatarUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  // ==========================================
+  // LOAD PROFILE DARI SUPABASE
+  // ==========================================
+  Future<void> _loadProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user == null) return;
+
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('name, phone, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+      if (!mounted) return;
+
+      setState(() {
+        _nama = profile['name'] ?? '-';
+        _phone = profile['phone'] ?? '-';
+        _email = user.email ?? '-';
+        _avatarUrl = profile['avatar_url'];
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _email = user.email ?? '-';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F0),
 
+      // ==========================================
+      // HEADER
+      // ==========================================
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -21,9 +73,7 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         toolbarHeight: 64,
         titleSpacing: 20,
-        // ==========================================
-        // HEADER
-        // ==========================================
+
         title: Row(
           children: [
             Image.asset(
@@ -50,184 +100,158 @@ class ProfileScreen extends StatelessWidget {
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          physics: const BouncingScrollPhysics(),
+
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
 
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
               // ==========================================
-              // TITLE
-              // ==========================================
-              const Text(
-                'Profil',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFF28C28),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              const Text(
-                'Kelola informasi dan pengaturan akun Aurum Anda.',
-                style: TextStyle(fontSize: 14, color: Color(0xFF777777)),
-              ),
-
-              const SizedBox(height: 30),
-
-              // ==========================================
               // PROFILE CARD
               // ==========================================
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 18,
+                ),
 
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(18),
 
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  border: Border.all(color: const Color(0xFFF28C28), width: 1),
                 ),
 
-                child: Column(
+                child: Row(
                   children: [
+                    // ======================================
                     // FOTO PROFIL
-                    Container(
-                      width: 90,
-                      height: 90,
+                    // ======================================
+                    Stack(
+                      clipBehavior: Clip.none,
 
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFE5CC),
-                        shape: BoxShape.circle,
-                      ),
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
 
-                      child: const Icon(
-                        Icons.person_rounded,
-                        size: 48,
-                        color: Color(0xFFF28C28),
-                      ),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFE5CC),
+                            shape: BoxShape.circle,
+                          ),
+
+                          child: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                              ? ClipOval(
+                                  child: Image.network(
+                                     '${_avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}',
+                                    width: 64,
+                                    height: 64,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.person_rounded,
+                                  size: 38,
+                                  color: Color(0xFFF28C28),
+                                ),
+                        ),
+
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+
+                          child: Container(
+                            width: 24,
+                            height: 24,
+
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF3D2B1F),
+                              shape: BoxShape.circle,
+                            ),
+
+                            child: const Icon(
+                              Icons.camera_alt_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(width: 16),
 
-                    // NAMA
-                    const Text(
-                      'Rosalinda',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3D2B1F),
+                    // ======================================
+                    // NAMA + EMAIL
+                    // ======================================
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+
+                        children: [
+                          Text(
+                            _nama,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF3D2B1F),
+                            ),
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          Text(
+                            _email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF999999),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    const Text(
-                      'Pengguna Aurum',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF777777)),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 22),
 
               // ==========================================
-              // INFORMASI AKUN
+              // AKUN
               // ==========================================
               const Text(
-                'Informasi Akun',
+                'AKUN',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF3D2B1F),
+                  color: Color(0xFFAAAAAA),
+                  letterSpacing: 0.5,
                 ),
               ),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 8),
 
               Container(
                 width: double.infinity,
 
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(16),
 
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-
-                child: Column(
-                  children: [
-                    _buildProfileItem(
-                      icon: Icons.person_outline_rounded,
-                      title: 'Nama',
-                      value: 'Rosalinda',
-                    ),
-
-                    const Divider(height: 1, indent: 20, endIndent: 20),
-
-                    _buildProfileItem(
-                      icon: Icons.email_outlined,
-                      title: 'Email',
-                      value: 'rosalinda@email.com',
-                    ),
-
-                    const Divider(height: 1, indent: 20, endIndent: 20),
-
-                    _buildProfileItem(
-                      icon: Icons.phone_outlined,
-                      title: 'Nomor HP',
-                      value: '08xxxxxxxxxx',
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 25),
-
-              // ==========================================
-              // PENGATURAN
-              // ==========================================
-              const Text(
-                'Pengaturan',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF3D2B1F),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              // ==========================================
-              // MENU
-              // ==========================================
-              Container(
-                width: double.infinity,
-
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -235,29 +259,88 @@ class ProfileScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     // ======================================
-                    // UBAH PROFIL
+                    // EDIT PROFIL
                     // ======================================
                     _buildMenuItem(
-                      icon: Icons.edit_outlined,
-                      title: 'Ubah Profil',
-                      onTap: () {
-                        Navigator.push(
+                      icon: Icons.person_outline_rounded,
+                      title: 'Edit Profil',
+                      subtitle: 'Ubah informasi profil Anda',
+                      onTap: () async {
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const EditProfileScreen(),
                           ),
                         );
+
+                        _loadProfile();
                       },
                     ),
 
-                    const Divider(height: 1, indent: 20, endIndent: 20),
+                    const Divider(height: 1, indent: 60, endIndent: 0),
 
                     // ======================================
-                    // PENGATURAN APLIKASI
+                    // UBAH PASSWORD
                     // ======================================
                     _buildMenuItem(
-                      icon: Icons.settings_outlined,
-                      title: 'Pengaturan Aplikasi',
+                      icon: Icons.lock_outline_rounded,
+                      title: 'Ubah Password',
+                      subtitle: 'Ganti password akun Anda',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AccountSecurityScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // ==========================================
+              // PENGATURAN
+              // ==========================================
+              const Text(
+                'PENGATURAN',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFAAAAAA),
+                  letterSpacing: 0.5,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Container(
+                width: double.infinity,
+
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+
+                child: Column(
+                  children: [
+                    // ======================================
+                    // BAHASA
+                    // ======================================
+                    _buildMenuItem(
+                      icon: Icons.language_rounded,
+                      title: 'Bahasa',
+                      subtitle: 'Bahasa Indonesia',
                       onTap: () {
                         Navigator.push(
                           context,
@@ -268,123 +351,123 @@ class ProfileScreen extends StatelessWidget {
                       },
                     ),
 
-                    const Divider(height: 1, indent: 20, endIndent: 20),
+                    const Divider(height: 1, indent: 60, endIndent: 0),
 
                     // ======================================
-                    // BANTUAN
+                    // TEMA
                     // ======================================
                     _buildMenuItem(
-                      icon: Icons.help_outline_rounded,
-                      title: 'Bantuan',
+                      icon: Icons.palette_outlined,
+                      title: 'Tema',
+                      subtitle: 'Terang',
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const HelpScreen(),
+                            builder: (context) => const AppSettingsScreen(),
                           ),
                         );
-                      },
-                    ),
-
-                    const Divider(height: 1, indent: 20, endIndent: 20),
-
-                    // ======================================
-                    // KEAMANAN AKUN
-                    // ======================================
-                    _buildMenuItem(
-                      icon: Icons.security_outlined,
-                      title: 'Keamanan Akun',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AccountSecurityScreen(),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const Divider(height: 1, indent: 20, endIndent: 20),
-
-                    // ======================================
-                    // KELUAR
-                    // ======================================
-                    _buildMenuItem(
-                      icon: Icons.logout_rounded,
-                      title: 'Keluar',
-                      iconColor: Colors.red,
-                      titleColor: Colors.red,
-                      onTap: () {
-                        _showLogoutDialog(context);
                       },
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 18),
+
+              // ==========================================
+              // TENTANG
+              // ==========================================
+              const Text(
+                'TENTANG',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFAAAAAA),
+                  letterSpacing: 0.5,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Container(
+                width: double.infinity,
+
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+
+                child: _buildMenuItem(
+                  icon: Icons.info_outline_rounded,
+                  title: 'Tentang AURUM',
+                  subtitle: 'Informasi aplikasi',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HelpScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // ==========================================
+              // KELUAR
+              // ==========================================
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    _showLogoutDialog(context);
+                  },
+
+                  icon: const Icon(
+                    Icons.logout_rounded,
+                    color: Colors.red,
+                    size: 21,
+                  ),
+
+                  label: const Text(
+                    'Keluar',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red,
+                    ),
+                  ),
+
+                  style: OutlinedButton.styleFrom(
+                    alignment: Alignment.centerLeft,
+
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+
+                    side: const BorderSide(color: Color(0xFFE8B9A9)),
+
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // ==================================================
-  // PROFILE ITEM
-  // ==================================================
-
-  Widget _buildProfileItem({
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE5CC),
-              borderRadius: BorderRadius.circular(12),
-            ),
-
-            child: Icon(icon, color: const Color(0xFFF28C28), size: 22),
-          ),
-
-          const SizedBox(width: 14),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF999999),
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF3D2B1F),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -396,9 +479,8 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
+    required String subtitle,
     required VoidCallback onTap,
-    Color iconColor = const Color(0xFFF28C28),
-    Color titleColor = const Color(0xFF3D2B1F),
   }) {
     return Material(
       color: Colors.transparent,
@@ -406,47 +488,60 @@ class ProfileScreen extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
 
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
 
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
 
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 38,
+                height: 38,
 
                 decoration: BoxDecoration(
-                  color: iconColor == Colors.red
-                      ? Colors.red.withOpacity(0.08)
-                      : const Color(0xFFFFE5CC),
-
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFFFFF3E7),
+                  borderRadius: BorderRadius.circular(11),
                 ),
 
-                child: Icon(icon, size: 22, color: iconColor),
+                child: Icon(icon, size: 20, color: const Color(0xFFF28C28)),
               ),
 
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
 
               Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: titleColor,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                  children: [
+                    Text(
+                      title,
+
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+
+                    const SizedBox(height: 2),
+
+                    Text(
+                      subtitle,
+
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF999999),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
-              Icon(
+              const Icon(
                 Icons.chevron_right_rounded,
-                size: 24,
-                color: iconColor == Colors.red
-                    ? Colors.red.withOpacity(0.7)
-                    : const Color(0xFFAAAAAA),
+                size: 22,
+                color: Color(0xFFAAAAAA),
               ),
             ],
           ),
@@ -495,7 +590,15 @@ class ProfileScreen extends StatelessWidget {
             ),
 
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                await Supabase.instance.client.auth.signOut();
+
+                print(
+                  'SESSION SETELAH LOGOUT: ${Supabase.instance.client.auth.currentSession}',
+                );
+
+                if (!context.mounted) return;
+
                 Navigator.pop(context);
 
                 Navigator.pushAndRemoveUntil(

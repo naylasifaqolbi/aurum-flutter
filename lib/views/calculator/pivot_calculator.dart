@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'pivot_result.dart';
 
+import '../../services/historical_api_service.dart';
+
 class PivotCalculator extends StatefulWidget {
   final VoidCallback? onBack;
 
@@ -28,6 +30,65 @@ class _PivotCalculatorState extends State<PivotCalculator> {
   final TextEditingController _lowController = TextEditingController();
 
   final TextEditingController _closeController = TextEditingController();
+
+  bool _isLoadingHistorical = true;
+
+  // ============================================================
+  // INIT
+  // ============================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadLatestHistoricalData();
+  }
+
+  // ============================================================
+  // LOAD DATA HISTORICAL TERBARU
+  // ============================================================
+
+  Future<void> _loadLatestHistoricalData() async {
+    try {
+      final result = await HistoricalApiService.getHistoricalData(
+        category: HistoricalApiService.defaultCategory,
+        page: 1,
+        limit: 10,
+      );
+
+      final dynamic rawData = result['data'];
+
+      if (rawData is List && rawData.isNotEmpty) {
+        final latest = rawData.first;
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _highController.text = latest['high']?.toString() ?? '';
+          _lowController.text = latest['low']?.toString() ?? '';
+          _closeController.text = latest['close']?.toString() ?? '';
+          _isLoadingHistorical = false;
+        });
+      } else {
+        if (!mounted) return;
+
+        setState(() {
+          _isLoadingHistorical = false;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingHistorical = false;
+      });
+
+      // Jika gagal mengambil historical data,
+      // user tetap bisa mengisi kalkulator secara manual.
+    }
+  }
 
   // ============================================================
   // DISPOSE
@@ -311,6 +372,7 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                   hintText: 'Masukkan harga open',
                   icon: Icons.radio_button_checked_rounded,
                   errorMessage: 'Harga Open wajib diisi',
+                  showLoading: false,
                 ),
 
                 const SizedBox(height: 20),
@@ -437,9 +499,12 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     required String hintText,
     required IconData icon,
     required String errorMessage,
+    bool showLoading = true,
   }) {
     return TextFormField(
       controller: controller,
+
+      readOnly: showLoading && _isLoadingHistorical,
 
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
 
@@ -460,11 +525,15 @@ class _PivotCalculatorState extends State<PivotCalculator> {
       },
 
       decoration: InputDecoration(
-        hintText: hintText,
+        hintText: showLoading && _isLoadingHistorical
+            ? 'Memuat data...'
+            : hintText,
 
-        hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 14),
+        hintStyle: const TextStyle(color: Color(0xFF888888), fontSize: 14),
 
-        prefixIcon: Icon(icon, color: const Color(0xFFF28C28)),
+        prefixIcon: showLoading && _isLoadingHistorical
+            ? const SizedBox(width: 50, child: Center(child: _LoadingArrow()))
+            : Icon(icon, color: const Color(0xFFF28C28)),
 
         filled: true,
 
@@ -499,6 +568,50 @@ class _PivotCalculatorState extends State<PivotCalculator> {
           horizontal: 16,
           vertical: 16,
         ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// LOADING ARROW
+// ============================================================
+
+class _LoadingArrow extends StatefulWidget {
+  const _LoadingArrow();
+
+  @override
+  State<_LoadingArrow> createState() => _LoadingArrowState();
+}
+
+class _LoadingArrowState extends State<_LoadingArrow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RotationTransition(
+      turns: _controller,
+      child: const Text(
+        '↻',
+        style: TextStyle(fontSize: 20, color: Color(0xFF888888)),
       ),
     );
   }

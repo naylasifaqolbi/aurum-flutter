@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../navigation/main_navigation_screen.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,28 +32,49 @@ class _LoginScreenState extends State<LoginScreen> {
   // ==========================================
   // LOGIN
   // ==========================================
-  void _login() {
+  Future<void> _login() async {
     // Menjalankan semua validator.
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     // Jika semua form sudah terisi,
-    // lanjut ke halaman utama.
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-    );
+    // lanjut melakukan login ke Supabase.
+    try {
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      // Login berhasil.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+      );
+    } on AuthException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan. Silakan coba lagi.')),
+      );
+    }
   }
 
   // ==========================================
   // LUPA PASSWORD
   // ==========================================
   void _forgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fitur lupa password akan segera tersedia.'),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'login_screen.dart';
 
@@ -12,6 +13,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -23,6 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -34,7 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // ==========================================
   // REGISTER
   // ==========================================
-  void _register() {
+  Future<void> _register() async {
     // Menjalankan semua validator.
     if (!_formKey.currentState!.validate()) {
       return;
@@ -43,22 +46,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Sampai sini berarti semua field sudah terisi
     // dan password sudah sesuai.
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Registrasi berhasil. Silakan masuk ke akun Anda.'),
-      ),
-    );
+    try {
+      final response = await Supabase.instance.client.auth.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        emailRedirectTo: 'com.example.aurum://login-callback/',
+        data: {
+          'name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+        },
+      );
 
-    // Belum menyimpan ke database.
-    // Setelah registrasi berhasil, kembali ke Login.
-    Future.delayed(const Duration(milliseconds: 800), () {
       if (!mounted) return;
 
-      Navigator.pushReplacement(
+      if (response.user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Registrasi berhasil. Silakan cek email untuk verifikasi akun.',
+            ),
+          ),
+        );
+
+        // Karena konfirmasi email aktif,
+        // user perlu verifikasi email sebelum login.
+        Future.delayed(const Duration(milliseconds: 1200), () {
+          if (!mounted) return;
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        });
+      }
+    } on AuthException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
         context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan. Silakan coba lagi.')),
       );
-    });
+    }
   }
 
   // ==========================================
@@ -213,6 +246,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
 
                     const SizedBox(height: 28),
+
+                    // ==========================================
+                    // NAMA
+                    // ==========================================
+                    const Text(
+                      'Nama',
+
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    TextFormField(
+                      controller: _nameController,
+
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Nama wajib diisi';
+                        }
+
+                        return null;
+                      },
+
+                      decoration: _inputDecoration(
+                        hintText: 'Masukkan nama',
+                        prefixIcon: Icons.person_outline,
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
 
                     // ==========================================
                     // EMAIL
