@@ -335,60 +335,57 @@ class PivotResult extends StatelessWidget {
               // ==================================================
               SizedBox(
                 width: double.infinity,
-                height: 52,
-
+                height: 48,
                 child: OutlinedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                   },
 
-                  icon: const Icon(Icons.refresh_rounded),
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
 
                   label: const Text(
                     'Hitung Lagi',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
 
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: orangeColor,
+                    foregroundColor: const Color(0xFFF28C28),
 
-                    side: const BorderSide(color: orangeColor, width: 1.5),
+                    side: const BorderSide(color: Color(0xFFF28C28)),
 
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(9),
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
 
-              // ==================================================
-              // SIMPAN KE RIWAYAT
-              // ==================================================
+              // UNDUH HASIL
               SizedBox(
                 width: double.infinity,
-                height: 52,
-
+                height: 48,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    _showSavedMessage(context);
+                    // Fungsi unduh hasil akan ditambahkan di sini
                   },
 
-                  icon: const Icon(Icons.bookmark_border_rounded),
+                  icon: const Icon(Icons.download_rounded, size: 20),
 
                   label: const Text(
-                    'Simpan ke Riwayat',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    'Unduh Hasil Perhitungan',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
 
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: orangeColor,
+                    backgroundColor: const Color(0xFFF28C28),
                     foregroundColor: Colors.white,
+
                     elevation: 0,
 
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(9),
                     ),
                   ),
                 ),
@@ -546,60 +543,82 @@ class PivotResult extends StatelessWidget {
         ],
       ),
 
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-
+      child: Stack(
         children: [
-          Row(
+          // ======================================================
+          // LOGO EWF SEBAGAI WATERMARK
+          // ======================================================
+          Positioned(
+            right: 5,
+            top: 0,
+            child: Opacity(
+              opacity: 0.10,
+              child: Image.asset(
+                'assets/images/ewf-logo.png',
+                width: 145,
+                height: 115,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+
+          // ======================================================
+          // ISI PIVOT POINT
+          // ======================================================
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
 
-                decoration: BoxDecoration(
-                  color: orangeColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                    decoration: BoxDecoration(
+                      color: orangeColor,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
 
-                child: const Icon(
-                  Icons.show_chart_rounded,
-                  color: Colors.white,
-                  size: 26,
-                ),
+                    child: const Icon(
+                      Icons.show_chart_rounded,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                  ),
+
+                  const SizedBox(width: 14),
+
+                  const Expanded(
+                    child: Text(
+                      'Pivot Point (PP)',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: darkBrown,
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
-              const SizedBox(width: 14),
+              const SizedBox(height: 18),
 
-              const Expanded(
-                child: Text(
-                  'Pivot Point (PP)',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: darkBrown,
-                  ),
+              const Text(
+                'PP = (High + Low + Close) / 3',
+                style: TextStyle(fontSize: 13, color: Color(0xFF777777)),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                _formatNumber(pp),
+                style: const TextStyle(
+                  fontSize: 27,
+                  fontWeight: FontWeight.bold,
+                  color: orangeColor,
                 ),
               ),
             ],
-          ),
-
-          const SizedBox(height: 18),
-
-          const Text(
-            'PP = (High + Low + Close) / 3',
-            style: TextStyle(fontSize: 13, color: Color(0xFF777777)),
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            _formatNumber(pp),
-
-            style: const TextStyle(
-              fontSize: 27,
-              fontWeight: FontWeight.bold,
-              color: orangeColor,
-            ),
           ),
         ],
       ),

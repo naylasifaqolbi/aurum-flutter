@@ -43,62 +43,53 @@ class PhysicalGoldResult extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isProfit = keuntungan >= 0;
 
-    
-              // ==========================================
-              // HEADER
-              // ==========================================
-             return Scaffold(
-  backgroundColor: const Color(0xFFFFF8F0),
+    // ==========================================
+    // HEADER
+    // ==========================================
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFF8F0),
 
-  appBar: AppBar(
-    backgroundColor: Colors.white,
-    surfaceTintColor: Colors.white,
-    elevation: 0,
-    scrolledUnderElevation: 0,
-    centerTitle: true,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
 
-    bottom: const PreferredSize(
-      preferredSize: Size.fromHeight(1),
-      child: Divider(
-        height: 1,
-        thickness: 1,
-        color: Color(0xFFE5E5E5),
-      ),
-    ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
+        ),
 
-    leading: IconButton(
-      onPressed: () {
-        Navigator.pop(context);
-      },
-      icon: const Icon(
-        Icons.arrow_back_rounded,
-        color: Color(0xFF3D2B1F),
-        size: 25,
-      ),
-    ),
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Color(0xFF3D2B1F),
+            size: 25,
+          ),
+        ),
 
-    title: const Text(
-      'Hasil Emas Fisik',
-      style: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: Color(0xFFF28C28),
-      ),
-    ),
-  ),
-
-  body: SafeArea(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 24,
-        vertical: 16,
+        title: const Text(
+          'Hasil Emas Fisik',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFF28C28),
+          ),
+        ),
       ),
 
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
 
-        children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
 
+            children: [
               // ==========================================
               // TITLE
               // ==========================================
@@ -338,29 +329,64 @@ class PhysicalGoldResult extends StatelessWidget {
               const SizedBox(height: 30),
 
               // ==========================================
-              // BUTTON KEMBALI
+              // ACTION BUTTONS
               // ==========================================
+
+              // HITUNG LAGI
               SizedBox(
                 width: double.infinity,
-                height: 52,
-
-                child: OutlinedButton(
+                height: 48,
+                child: OutlinedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                   },
 
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
+
+                  label: const Text(
+                    'Hitung Lagi',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFF28C28),
+
                     side: const BorderSide(color: Color(0xFFF28C28)),
 
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(9),
                     ),
                   ),
+                ),
+              ),
 
-                  child: const Text(
-                    'Kembali ke Kalkulator',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              const SizedBox(height: 10),
+
+              // UNDUH HASIL
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    // Fungsi unduh hasil akan ditambahkan di sini
+                  },
+
+                  icon: const Icon(Icons.download_rounded, size: 20),
+
+                  label: const Text(
+                    'Unduh Hasil Perhitungan',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF28C28),
+                    foregroundColor: Colors.white,
+
+                    elevation: 0,
+
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9),
+                    ),
                   ),
                 ),
               ),

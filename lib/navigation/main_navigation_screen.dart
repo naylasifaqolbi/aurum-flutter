@@ -43,6 +43,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   late final List<Widget> _pages;
 
+  final GlobalKey<DashboardScreenState> _dashboardKey =
+      GlobalKey<DashboardScreenState>();
+
   // ==========================================================
   // INIT STATE
   // ==========================================================
@@ -56,6 +59,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       // 1. DASHBOARD / BERANDA
       // ========================================================
       DashboardScreen(
+        key: _dashboardKey,
         onGoToCalculator: () {
           setState(() {
             _selectedIndex = 1;
@@ -85,6 +89,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // ==========================================================
 
   void _onNavbarTap(int index) {
+    if (index == 0) {
+      _dashboardKey.currentState?.loadProfile();
+    }
+
     setState(() {
       _selectedIndex = index;
     });
