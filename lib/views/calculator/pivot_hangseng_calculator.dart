@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'pivot_result.dart';
 
+import 'pivot_result.dart';
 import '../../services/historical_api_service.dart';
 
-class PivotCalculator extends StatefulWidget {
+class PivotHangsengCalculator extends StatefulWidget {
   final VoidCallback? onBack;
 
-  const PivotCalculator({super.key, this.onBack});
+  const PivotHangsengCalculator({super.key, this.onBack});
 
   @override
-  State<PivotCalculator> createState() => _PivotCalculatorState();
+  State<PivotHangsengCalculator> createState() =>
+      _PivotHangsengCalculatorState();
 }
 
-class _PivotCalculatorState extends State<PivotCalculator> {
+class _PivotHangsengCalculatorState extends State<PivotHangsengCalculator> {
   // ============================================================
   // FORM KEY
   // ============================================================
@@ -23,13 +24,21 @@ class _PivotCalculatorState extends State<PivotCalculator> {
   // CONTROLLER INPUT
   // ============================================================
 
+  // Harga Open diisi secara manual oleh pengguna.
   final TextEditingController _openController = TextEditingController();
 
+  // Harga High diambil otomatis dari historical.
   final TextEditingController _highController = TextEditingController();
 
+  // Harga Low diambil otomatis dari historical.
   final TextEditingController _lowController = TextEditingController();
 
+  // Harga Close diambil otomatis dari historical.
   final TextEditingController _closeController = TextEditingController();
+
+  // ============================================================
+  // STATUS LOADING HISTORICAL
+  // ============================================================
 
   bool _isLoadingHistorical = true;
 
@@ -51,7 +60,7 @@ class _PivotCalculatorState extends State<PivotCalculator> {
   Future<void> _loadLatestHistoricalData() async {
     try {
       final result = await HistoricalApiService.getHistoricalData(
-        category: HistoricalApiService.defaultCategory,
+        category: 'HSI Daily',
         page: 1,
         limit: 10,
       );
@@ -59,34 +68,50 @@ class _PivotCalculatorState extends State<PivotCalculator> {
       final dynamic rawData = result['data'];
 
       if (rawData is List && rawData.isNotEmpty) {
-        final latest = rawData.first;
+        final dynamic latest = rawData.first;
 
         if (!mounted) {
           return;
         }
 
         setState(() {
+          // ======================================================
+          // HARGA OPEN TIDAK DIISI OTOMATIS
+          // Harga Open tetap diketik manual oleh pengguna.
+          // ======================================================
+
+          // ======================================================
+          // HARGA HIGH, LOW, CLOSE DIISI OTOMATIS
+          // ======================================================
+
           _highController.text = latest['high']?.toString() ?? '';
+
           _lowController.text = latest['low']?.toString() ?? '';
+
           _closeController.text = latest['close']?.toString() ?? '';
+
           _isLoadingHistorical = false;
         });
       } else {
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
 
         setState(() {
           _isLoadingHistorical = false;
         });
       }
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _isLoadingHistorical = false;
       });
 
-      // Jika gagal mengambil historical data,
-      // user tetap bisa mengisi kalkulator secara manual.
+      // Jika data historical gagal dimuat,
+      // pengguna tetap dapat mengisi semua data secara manual.
     }
   }
 
@@ -105,12 +130,12 @@ class _PivotCalculatorState extends State<PivotCalculator> {
   }
 
   // ============================================================
-  // HITUNG PIVOT
+  // HITUNG PIVOT HANGSENG
   // ============================================================
 
   void _hitung() {
     // ==========================================================
-    // VALIDASI
+    // VALIDASI FORM
     // ==========================================================
 
     if (!_formKey.currentState!.validate()) {
@@ -118,7 +143,7 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     }
 
     // ==========================================================
-    // KONVERSI INPUT
+    // KONVERSI INPUT MENJADI DOUBLE
     // ==========================================================
 
     final double open = double.parse(
@@ -138,6 +163,27 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     );
 
     // ==========================================================
+    // VALIDASI NILAI HIGH DAN LOW
+    // ==========================================================
+
+    if (high < low) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Harga High tidak boleh lebih kecil dari Harga Low.',
+          ),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    // ==========================================================
     // PIVOT POINT
     //
     // PP = (High + Low + Close) / 3
@@ -147,6 +193,8 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
     // ==========================================================
     // RANGE
+    //
+    // Range = High - Low
     // ==========================================================
 
     final double range = high - low;
@@ -155,40 +203,32 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     // RESISTANCE
     // ==========================================================
 
-    // R4
-    // PP + (High - Low) x 3
-    final double r4 = pp + (range * 3);
+    // R1 = 2 x PP - Low
+    final double r1 = (2 * pp) - low;
 
-    // R3
-    // PP + (High - Low) x 2
-    final double r3 = pp + (range * 2);
-
-    // R2
-    // PP + (High - Low)
+    // R2 = PP + Range
     final double r2 = pp + range;
 
-    // R1
-    // 2 x PP - Low
-    final double r1 = (2 * pp) - low;
+    // R3 = PP + Range x 2
+    final double r3 = pp + (range * 2);
+
+    // R4 = PP + Range x 3
+    final double r4 = pp + (range * 3);
 
     // ==========================================================
     // SUPPORT
     // ==========================================================
 
-    // S1
-    // 2 x PP - High
+    // S1 = 2 x PP - High
     final double s1 = (2 * pp) - high;
 
-    // S2
-    // PP - (High - Low)
+    // S2 = PP - Range
     final double s2 = pp - range;
 
-    // S3
-    // PP - (High - Low) x 2
+    // S3 = PP - Range x 2
     final double s3 = pp - (range * 2);
 
-    // S4
-    // PP - (High - Low) x 3
+    // S4 = PP - Range x 3
     final double s4 = pp - (range * 3);
 
     // ==========================================================
@@ -224,13 +264,16 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     final double midpointS3S4 = (s3 + s4) / 2;
 
     // ==========================================================
-    // INDIKASI
+    // INDIKASI HANGSENG
+    //
+    // Open < PP = SELL
+    // Open >= PP = BUY
     // ==========================================================
 
-    final String indication = open < pp ? 'BUY' : 'SELL';
+    final String indication = open < pp ? 'SELL' : 'BUY';
 
     // ==========================================================
-    // PINDAH KE HASIL
+    // PINDAH KE HALAMAN HASIL
     // ==========================================================
 
     Navigator.push(
@@ -241,30 +284,25 @@ class _PivotCalculatorState extends State<PivotCalculator> {
           high: high,
           low: low,
           close: close,
-
           pp: pp,
-
           r1: r1,
           r2: r2,
           r3: r3,
           r4: r4,
-
           s1: s1,
           s2: s2,
           s3: s3,
           s4: s4,
-
           midpointR4R3: midpointR4R3,
           midpointR3R2: midpointR3R2,
           midpointR2R1: midpointR2R1,
           midpointPPR1: midpointPPR1,
-
           midpointPPS1: midpointPPS1,
           midpointS1S2: midpointS1S2,
           midpointS2S3: midpointS2S3,
           midpointS3S4: midpointS3S4,
-
           indication: indication,
+          pivotType: 'Hang Seng',
         ),
       ),
     );
@@ -310,7 +348,7 @@ class _PivotCalculatorState extends State<PivotCalculator> {
         ),
 
         title: const Text(
-          'Pivot Point',
+          'Pivot Hangseng',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -325,21 +363,17 @@ class _PivotCalculatorState extends State<PivotCalculator> {
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-
           child: Form(
             key: _formKey,
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
                 // ==================================================
                 // TITLE
                 // ==================================================
                 const Text(
-                  'Hitung Pivot Point',
+                  'Hitung Pivot Hangseng',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -350,8 +384,9 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                 const SizedBox(height: 8),
 
                 const Text(
-                  'Masukkan data Open, High, Low, dan Close '
-                  'untuk menghitung Pivot Point.',
+                  'Masukkan harga Open secara manual. '
+                  'Harga High, Low, dan Close diambil otomatis '
+                  'dari data historical Hangseng.',
                   style: TextStyle(
                     fontSize: 14,
                     color: Color(0xFF777777),
@@ -362,7 +397,7 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                 const SizedBox(height: 30),
 
                 // ==================================================
-                // OPEN
+                // OPEN - INPUT MANUAL
                 // ==================================================
                 _buildInputLabel('Harga Open'),
 
@@ -379,7 +414,7 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                 const SizedBox(height: 20),
 
                 // ==================================================
-                // HIGH
+                // HIGH - OTOMATIS
                 // ==================================================
                 _buildInputLabel('Harga High'),
 
@@ -390,12 +425,13 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                   hintText: 'Masukkan harga high',
                   icon: Icons.arrow_upward_rounded,
                   errorMessage: 'Harga High wajib diisi',
+                  showLoading: true,
                 ),
 
                 const SizedBox(height: 20),
 
                 // ==================================================
-                // LOW
+                // LOW - OTOMATIS
                 // ==================================================
                 _buildInputLabel('Harga Low'),
 
@@ -406,12 +442,13 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                   hintText: 'Masukkan harga low',
                   icon: Icons.arrow_downward_rounded,
                   errorMessage: 'Harga Low wajib diisi',
+                  showLoading: true,
                 ),
 
                 const SizedBox(height: 20),
 
                 // ==================================================
-                // CLOSE
+                // CLOSE - OTOMATIS
                 // ==================================================
                 _buildInputLabel('Harga Close'),
 
@@ -422,6 +459,7 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                   hintText: 'Masukkan harga close',
                   icon: Icons.show_chart_rounded,
                   errorMessage: 'Harga Close wajib diisi',
+                  showLoading: true,
                 ),
 
                 const SizedBox(height: 32),
@@ -432,28 +470,21 @@ class _PivotCalculatorState extends State<PivotCalculator> {
                 SizedBox(
                   width: double.infinity,
                   height: 54,
-
                   child: ElevatedButton(
                     onPressed: _hitung,
-
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF28C28),
                       foregroundColor: Colors.white,
                       elevation: 0,
-
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-
                       children: [
                         Icon(Icons.calculate_outlined, size: 21),
-
                         SizedBox(width: 10),
-
                         Text(
                           'Hitung',
                           style: TextStyle(
@@ -482,7 +513,6 @@ class _PivotCalculatorState extends State<PivotCalculator> {
   Widget _buildInputLabel(String label) {
     return Text(
       label,
-
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
@@ -502,10 +532,14 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     required String errorMessage,
     bool showLoading = true,
   }) {
+    final bool isLoading = showLoading && _isLoadingHistorical;
+
     return TextFormField(
       controller: controller,
 
-      readOnly: showLoading && _isLoadingHistorical,
+      // Harga Open tidak loading sehingga tetap bisa diketik.
+      // Harga High, Low, dan Close readOnly saat proses loading.
+      readOnly: isLoading,
 
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
 
@@ -522,22 +556,23 @@ class _PivotCalculatorState extends State<PivotCalculator> {
           return 'Masukkan angka yang valid';
         }
 
+        if (number < 0) {
+          return 'Angka tidak boleh negatif';
+        }
+
         return null;
       },
 
       decoration: InputDecoration(
-        hintText: showLoading && _isLoadingHistorical
-            ? 'Memuat data...'
-            : hintText,
+        hintText: isLoading ? 'Memuat data...' : hintText,
 
         hintStyle: const TextStyle(color: Color(0xFF888888), fontSize: 14),
 
-        prefixIcon: showLoading && _isLoadingHistorical
+        prefixIcon: isLoading
             ? const SizedBox(width: 50, child: Center(child: _LoadingArrow()))
             : Icon(icon, color: const Color(0xFFF28C28)),
 
         filled: true,
-
         fillColor: Colors.white,
 
         border: OutlineInputBorder(
