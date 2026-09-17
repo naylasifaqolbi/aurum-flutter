@@ -193,95 +193,40 @@ class PivotResult extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
-              // ==================================================
-              // TITLE
-              // ==================================================
-              Text(
-                'Rincian Perhitungan',
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: orangeColor,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                resultDescription,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF777777),
-                  height: 1.5,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // ==================================================
-              // DATA INPUT
-              // ==================================================
-              _buildSectionTitle('Data Input'),
-
-              const SizedBox(height: 12),
-
               _buildInputCard(),
 
               const SizedBox(height: 20),
 
-              // ==================================================
-              // HASIL PIVOT POINT
-              // ==================================================
               _buildSectionTitle('Hasil Pivot Point'),
               const SizedBox(height: 12),
 
               _buildPivotLevelsCard(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 25),
 
-              // ==================================================
-              // RESISTANCE
-              // ==================================================
-              const SizedBox(height: 20),
-
-              // ==================================================
-              // INDIKASI
-              // ==================================================
               _buildIndicationCard(),
 
               const SizedBox(height: 12),
 
-              // ==================================================
-              // HITUNG LAGI
-              // ==================================================
               SizedBox(
                 width: double.infinity,
                 height: 48,
-
                 child: OutlinedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                   },
-
                   icon: const Icon(Icons.refresh_rounded, size: 20),
-
                   label: const Text(
                     'Hitung Lagi',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
-
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFF28C28),
-
                     side: const BorderSide(color: Color(0xFFF28C28)),
-
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(9),
                     ),
@@ -291,30 +236,22 @@ class PivotResult extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // ==================================================
-              // UNDUH HASIL
-              // ==================================================
               SizedBox(
                 width: double.infinity,
                 height: 48,
-
                 child: ElevatedButton.icon(
                   onPressed: () {
                     _downloadResult(context);
                   },
-
                   icon: const Icon(Icons.download_rounded, size: 20),
-
                   label: const Text(
                     'Unduh Hasil Perhitungan',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
-
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF28C28),
                     foregroundColor: Colors.white,
                     elevation: 0,
-
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(9),
                     ),
@@ -373,12 +310,12 @@ class PivotResult extends StatelessWidget {
           Positioned.fill(
             child: Center(
               child: Opacity(
-                opacity: 0.10,
+                opacity: 0.35,
 
                 child: Image.asset(
                   'assets/images/ewf-logo.png',
-                  width: 125,
-                  height: 95,
+                  width: 500,
+                  height: 500,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -389,7 +326,19 @@ class PivotResult extends StatelessWidget {
           // DATA INPUT
           // ======================================================
           Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Text(
+                'Rincian Perhitungan',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: darkBrown,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
               _buildInputRow(
                 icon: Icons.radio_button_checked_rounded,
                 title: 'Open',
@@ -475,94 +424,87 @@ class PivotResult extends StatelessWidget {
   // ============================================================
 
   Widget _buildPivotLevelsCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E5E5)),
-      ),
-      child: Column(
-        children: [
-          _buildPivotLevelRow(
-            level: 'R4',
-            formula: 'PP + (High - Low) × 3',
-            value: r4,
-            color: greenColor,
-            midpoint: midpointR4R3,
-            midpointFormula: '(Hasil R4 + Hasil R3) / 2',
-          ),
+    return Column(
+      children: [
+        _buildPivotLevelRow(
+          level: 'R4',
+          formula: 'PP + (H - L) × 3',
+          value: r4,
+          color: greenColor,
+          midpoint: midpointR4R3,
+          midpointFormula: '(R4 + R3) / 2',
+        ),
 
-          _buildPivotLevelRow(
-            level: 'R3',
-            formula: 'PP + (High - Low) × 2',
-            value: r3,
-            color: greenColor,
-            midpoint: midpointR3R2,
-            midpointFormula: '(Hasil R3 + Hasil R2) / 2',
-          ),
+        _buildPivotLevelRow(
+          level: 'R3',
+          formula: 'PP + (H - L) × 2',
+          value: r3,
+          color: greenColor,
+          midpoint: midpointR3R2,
+          midpointFormula: '(R3 + R2) / 2',
+        ),
 
-          _buildPivotLevelRow(
-            level: 'R2',
-            formula: 'PP + (High - Low)',
-            value: r2,
-            color: greenColor,
-            midpoint: midpointR2R1,
-            midpointFormula: '(Hasil R2 + Hasil R1) / 2',
-          ),
+        _buildPivotLevelRow(
+          level: 'R2',
+          formula: 'PP + (H - L)',
+          value: r2,
+          color: greenColor,
+          midpoint: midpointR2R1,
+          midpointFormula: '(R2 + R1) / 2',
+        ),
 
-          _buildPivotLevelRow(
-            level: 'R1',
-            formula: '2 × PP - Low',
-            value: r1,
-            color: greenColor,
-            midpoint: midpointPPR1,
-            midpointFormula: '(Hasil PP + Hasil R1) / 2',
-          ),
+        _buildPivotLevelRow(
+          level: 'R1',
+          formula: '2 × PP - L',
+          value: r1,
+          color: greenColor,
+          midpoint: midpointPPR1,
+          midpointFormula: '(PP + R1) / 2',
+        ),
 
-          _buildPivotLevelRow(
-            level: 'PP',
-            formula: '(High + Low + Close) / 3',
-            value: pp,
-            color: orangeColor,
-            midpoint: midpointPPS1,
-            midpointFormula: '(Hasil PP + Hasil S1) / 2',
-          ),
+        _buildPivotLevelRow(
+          level: 'PP',
+          formula: '(H + L + C) / 3',
+          value: pp,
+          color: orangeColor,
+          midpoint: midpointPPS1,
+          midpointFormula: '(PP + S1) / 2',
+        ),
 
-          _buildPivotLevelRow(
-            level: 'S1',
-            formula: '2 × PP - High',
-            value: s1,
-            color: redColor,
-            midpoint: midpointS1S2,
-            midpointFormula: '(Hasil S1 + Hasil S2) / 2',
-          ),
+        _buildPivotLevelRow(
+          level: 'S1',
+          formula: '2 × PP - H',
+          value: s1,
+          color: redColor,
+          midpoint: midpointS1S2,
+          midpointFormula: '(S1 + S2) / 2',
+        ),
 
-          _buildPivotLevelRow(
-            level: 'S2',
-            formula: 'PP - (High - Low)',
-            value: s2,
-            color: redColor,
-            midpoint: midpointS2S3,
-            midpointFormula: '(Hasil S2 + Hasil S3) / 2',
-          ),
+        _buildPivotLevelRow(
+          level: 'S2',
+          formula: 'PP - (H - L)',
+          value: s2,
+          color: redColor,
+          midpoint: midpointS2S3,
+          midpointFormula: '(S2 + S3) / 2',
+        ),
 
-          _buildPivotLevelRow(
-            level: 'S3',
-            formula: 'PP - (High - Low) × 2',
-            value: s3,
-            color: redColor,
-            midpoint: midpointS3S4,
-            midpointFormula: '(Hasil S3 + Hasil S4) / 2',
-          ),
+        _buildPivotLevelRow(
+          level: 'S3',
+          formula: 'PP - (H - L) × 2',
+          value: s3,
+          color: redColor,
+          midpoint: midpointS3S4,
+          midpointFormula: '(S3 + S4) / 2',
+        ),
 
-          _buildPivotLevelRow(
-            level: 'S4',
-            formula: 'PP - (High - Low) × 3',
-            value: s4,
-            color: redColor,
-          ),
-        ],
-      ),
+        _buildPivotLevelRow(
+          level: 'S4',
+          formula: 'PP - (H - L) × 3',
+          value: s4,
+          color: redColor,
+        ),
+      ],
     );
   }
 
@@ -574,85 +516,105 @@ class PivotResult extends StatelessWidget {
     double? midpoint,
     String? midpointFormula,
   }) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE5E5E5))),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final bool isPivotPoint = level == 'PP';
+
+    return Padding(
+      padding: EdgeInsets.zero,
+      child: Column(
         children: [
-          SizedBox(
-            width: 48,
-            child: Text(
-              level,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: color,
+          // ==================================================
+          // LEVEL
+          // ==================================================
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+            decoration: BoxDecoration(
+              color: isPivotPoint ? lightOrange : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isPivotPoint
+                    ? orangeColor.withOpacity(0.45)
+                    : const Color(0xFFE5E5E5),
               ),
             ),
-          ),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  formula,
-                  style: const TextStyle(fontSize: 15, color: darkBrown),
+                SizedBox(
+                  width: 38,
+                  child: Text(
+                    level,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
                 ),
 
-                if (midpoint != null && midpointFormula != null) ...[
-                  const SizedBox(height: 7),
+                const SizedBox(width: 8),
 
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'midpoint',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      Expanded(
-                        child: Text(
-                          midpointFormula,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      Text(
-                        _formatNumber(midpoint),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
+                Expanded(
+                  child: Text(
+                    formula,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF777777),
+                    ),
                   ),
-                ],
+                ),
+
+                const SizedBox(width: 8),
+
+                Text(
+                  _formatNumber(value),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
               ],
             ),
           ),
 
-          const SizedBox(width: 10),
+          // ==================================================
+          // MIDPOINT
+          // ==================================================
+          if (midpoint != null && midpointFormula != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F7F7),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE0E0E0)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Midpoint $midpointFormula',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF999999),
+                      ),
+                    ),
+                  ),
 
-          Text(
-            _formatNumber(value),
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-              color: color,
+                  const SizedBox(width: 8),
+
+                  Text(
+                    _formatNumber(midpoint),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF888888),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1058,12 +1020,12 @@ class PivotResult extends StatelessWidget {
     return Container(
       width: double.infinity,
 
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
 
       decoration: BoxDecoration(
         color: Colors.white,
 
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
 
         border: Border.all(color: indicationColor.withOpacity(0.25)),
 
@@ -1095,18 +1057,18 @@ class PivotResult extends StatelessWidget {
           Container(
             width: double.infinity,
 
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(13),
 
             decoration: BoxDecoration(
               color: indicationBackground,
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(13),
             ),
 
             child: Row(
               children: [
                 Container(
-                  width: 45,
-                  height: 45,
+                  width: 42,
+                  height: 42,
 
                   decoration: BoxDecoration(
                     color: indicationColor,
@@ -1118,11 +1080,11 @@ class PivotResult extends StatelessWidget {
                         ? Icons.arrow_upward_rounded
                         : Icons.arrow_downward_rounded,
                     color: Colors.white,
-                    size: 24,
+                    size: 22,
                   ),
                 ),
 
-                const SizedBox(width: 13),
+                const SizedBox(width: 11),
 
                 Expanded(
                   child: Column(
@@ -1132,20 +1094,20 @@ class PivotResult extends StatelessWidget {
                       Text(
                         indication,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 19,
                           fontWeight: FontWeight.bold,
                           color: indicationColor,
                         ),
                       ),
 
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
 
                       Text(
                         indicationDescription,
                         style: const TextStyle(
                           fontSize: 13,
                           color: Color(0xFF666666),
-                          height: 1.4,
+                          height: 1.3,
                         ),
                       ),
                     ],
@@ -1155,7 +1117,7 @@ class PivotResult extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 9),
 
           Text(
             'Open: ${_formatNumber(open)}  •  '

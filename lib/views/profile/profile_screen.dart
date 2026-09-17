@@ -146,7 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: _avatarUrl != null && _avatarUrl!.isNotEmpty
                               ? ClipOval(
                                   child: Image.network(
-                                     '${_avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}',
+                                    '${_avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}',
                                     width: 64,
                                     height: 64,
                                     fit: BoxFit.cover,
