@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'pivot_result.dart';
 
 import '../../services/historical_api_service.dart';
@@ -279,15 +280,24 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F0),
 
-      // ==========================================================
-      // APP BAR
-      // ==========================================================
+      // ==================================================
+      // HEADER
+      // ==================================================
       appBar: AppBar(
         backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        scrolledUnderElevation: 0,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
+
+        // ==========================================
+        // STATUS BAR
+        // ==========================================
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.white,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
 
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
@@ -310,10 +320,10 @@ class _PivotCalculatorState extends State<PivotCalculator> {
         ),
 
         title: const Text(
-          'Pivot Point',
+          'Pivot Point Emas',
           style: TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             color: Color(0xFFF28C28),
           ),
         ),

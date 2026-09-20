@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../services/historical_api_service.dart';
 import 'nest_result.dart';
@@ -122,16 +123,31 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F0),
+
+      // ==================================================
+      // HEADER
+      // ==================================================
       appBar: AppBar(
         backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        scrolledUnderElevation: 0,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
+
+        // ==========================================
+        // STATUS BAR
+        // ==========================================
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.white,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
+
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
         ),
+
         leading: IconButton(
           onPressed: () {
             if (widget.onBack != null) {
@@ -146,15 +162,17 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
             size: 25,
           ),
         ),
+
         title: const Text(
           'Nest',
           style: TextStyle(
             fontSize: 20,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             color: Color(0xFFF28C28),
           ),
         ),
       ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
