@@ -31,6 +31,42 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
+
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        toolbarHeight: 64,
+        titleSpacing: 20,
+
+        // ==================================================
+        // HEADER
+        // ==================================================
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              width: 42,
+              height: 42,
+              fit: BoxFit.contain,
+            ),
+
+            const SizedBox(width: 10),
+
+            const Text(
+              'AURUM',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFF28C28),
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -38,25 +74,20 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
-
-              const SizedBox(height: 28),
-
               _buildSectionTitle(
                 title: 'Kalkulator',
-                subtitle: 'Pilih kalkulator yang ingin kamu gunakan.',
+                subtitle: 'Pilih kalkulator sesuai dengan kebutuhan anda.',
               ),
 
               const SizedBox(height: 16),
 
               _buildCalculatorList(),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 14),
 
               _buildSectionTitle(
                 title: 'Konsep Transaksi',
-                subtitle:
-                    'Gunakan fitur analisis untuk membantu membaca kondisi pasar.',
+                subtitle: 'Membantu anda untuk menganalisis kondisi pasar.',
               ),
 
               const SizedBox(height: 16),
@@ -66,46 +97,6 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'AURUM',
-              style: TextStyle(
-                color: orangeColor,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Gold Analysis & Calculator',
-              style: TextStyle(color: darkBrownColor, fontSize: 13),
-            ),
-          ],
-        ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: lightOrangeColor,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(
-            Icons.notifications_none_rounded,
-            color: orangeColor,
-            size: 25,
-          ),
-        ),
-      ],
     );
   }
 
@@ -135,9 +126,9 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
       children: [
         _buildCalculatorCard(
           icon: Icons.monetization_on_outlined,
-          title: 'Gold Calcu',
+          title: 'Emas Fisik',
           description:
-              'Menghitung estimasi jumlah emas dan keuntungan berdasarkan modal, kurs, harga beli, dan harga jual.',
+              'Menghitung estimasi keuntungan berdasarkan modal, kurs, harga beli, dan harga jual.',
           onTap: () {
             setState(() {
               _selectedCalculator = PhysicalGoldCalculator(
@@ -159,9 +150,9 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
       children: [
         _buildCalculatorCard(
           icon: Icons.show_chart_rounded,
-          title: 'Pivot Emas',
+          title: 'Pivot Point Emas',
           description:
-              'Menghitung Pivot Point emas berdasarkan nilai High, Low, dan Close.',
+              'Menghitung Pivot Point emas berdasarkan harga High, Low, dan Close.',
           onTap: () {
             setState(() {
               _selectedCalculator = PivotCalculator(
@@ -179,9 +170,9 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
 
         _buildCalculatorCard(
           icon: Icons.trending_up_rounded,
-          title: 'Pivot Hangseng',
+          title: 'Pivot Point Hang Seng',
           description:
-              'Menghitung Pivot Point Hang Seng berdasarkan nilai High, Low, dan Close.',
+              'Menghitung Pivot Point Hang Seng berdasarkan harga High, Low, dan Close.',
           onTap: () {
             setState(() {
               _selectedCalculator = PivotHangsengCalculator(
@@ -201,7 +192,7 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
           icon: Icons.account_tree_outlined,
           title: 'Nest',
           description:
-              'Menampilkan indikator BUY, SELL, atau NETRAL berdasarkan perbandingan harga Open dan Close.',
+              'Menampilkan indikator BUY atau SELL berdasarkan perbandingan harga Open dan Close.',
           onTap: () {
             setState(() {
               _selectedCalculator = NestCalculatorScreen(
@@ -226,19 +217,19 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(17),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(17),
           border: Border.all(color: lightOrangeColor, width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
+              color: Colors.black.withValues(alpha: 0.035),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -246,16 +237,16 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 58,
-              height: 58,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
                 color: lightOrangeColor,
-                borderRadius: BorderRadius.circular(17),
+                borderRadius: BorderRadius.circular(15),
               ),
-              child: Icon(icon, color: orangeColor, size: 30),
+              child: Icon(icon, color: orangeColor, size: 26),
             ),
 
-            const SizedBox(width: 16),
+            const SizedBox(width: 13),
 
             Expanded(
               child: Column(
@@ -265,31 +256,31 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
                     title,
                     style: const TextStyle(
                       color: darkBrownColor,
-                      fontSize: 17,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
 
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 5),
 
                   Text(
                     description,
                     style: const TextStyle(
                       color: Colors.black54,
-                      fontSize: 12.5,
-                      height: 1.45,
+                      fontSize: 12,
+                      height: 1.35,
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
 
             const Icon(
               Icons.arrow_forward_ios_rounded,
               color: orangeColor,
-              size: 17,
+              size: 15,
             ),
           ],
         ),

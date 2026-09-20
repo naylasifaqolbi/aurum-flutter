@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'physical_gold_result.dart';
 
 class PhysicalGoldCalculator extends StatefulWidget {
@@ -148,11 +149,14 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // ==================================================
+      // BACKGROUND UTAMA
+      // ==================================================
       backgroundColor: const Color(0xFFFFF8F0),
 
-      // ==========================================
+      // ==================================================
       // HEADER
-      // ==========================================
+      // ==================================================
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -160,11 +164,26 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
 
+        // ==================================================
+        // STATUS BAR
+        // ==================================================
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.white,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
+
+        // ==================================================
+        // GARIS PEMBATAS HEADER
+        // ==================================================
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
         ),
 
+        // ==================================================
+        // TOMBOL BACK
+        // ==================================================
         leading: IconButton(
           onPressed: () {
             if (widget.onBack != null) {
@@ -180,6 +199,9 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
           ),
         ),
 
+        // ==================================================
+        // JUDUL HEADER
+        // ==================================================
         title: const Text(
           'Emas Fisik',
           style: TextStyle(
@@ -190,6 +212,9 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
         ),
       ),
 
+      // ==================================================
+      // BODY
+      // ==================================================
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -201,7 +226,6 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
               crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
-                
                 // ==========================================
                 // TITLE
                 // ==========================================
