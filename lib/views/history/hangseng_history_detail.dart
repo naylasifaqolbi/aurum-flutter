@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class PivotHistoryDetail extends StatelessWidget {
-  const PivotHistoryDetail({super.key});
+class HangsengHistoryDetail extends StatelessWidget {
+  const HangsengHistoryDetail({super.key});
 
   // ============================================================
   // COLOR
@@ -95,6 +95,7 @@ class PivotHistoryDetail extends StatelessWidget {
                       borderRadius: BorderRadius.circular(7),
                       border: Border.all(color: orangeColor, width: 1),
                     ),
+
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -107,7 +108,7 @@ class PivotHistoryDetail extends StatelessWidget {
                         SizedBox(width: 5),
 
                         Text(
-                          'KALKULATOR PP EMAS',
+                          'KALKULATOR PP HANG SENG',
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
@@ -123,7 +124,7 @@ class PivotHistoryDetail extends StatelessWidget {
               const SizedBox(height: 8),
 
               const Text(
-                '24 Okt 2026, 09:15 WIB',
+                '24 Okt 2026, 10:00 WIB',
                 style: TextStyle(fontSize: 13, color: Color(0xFF667085)),
               ),
 
@@ -209,14 +210,11 @@ class PivotHistoryDetail extends StatelessWidget {
   Widget _buildSummaryCard() {
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
 
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(17),
-
         border: Border.all(color: const Color(0xFFE1E7EF), width: 1),
       ),
 
@@ -246,9 +244,6 @@ class PivotHistoryDetail extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-              // ==================================================
-              // TITLE
-              // ==================================================
               const Text(
                 'Ringkasan Pivot Point',
                 style: TextStyle(
@@ -274,7 +269,7 @@ class PivotHistoryDetail extends StatelessWidget {
                     SizedBox(height: 2),
 
                     Text(
-                      '1972.80',
+                      '24850.50',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -339,13 +334,13 @@ class PivotHistoryDetail extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildInputBox(label: 'Open', value: '1985'),
+                    child: _buildInputBox(label: 'Open', value: '24800'),
                   ),
 
                   const SizedBox(width: 8),
 
                   Expanded(
-                    child: _buildInputBox(label: 'High', value: '1960'),
+                    child: _buildInputBox(label: 'High', value: '24980'),
                   ),
                 ],
               ),
@@ -355,13 +350,13 @@ class PivotHistoryDetail extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildInputBox(label: 'Low', value: '1972'),
+                    child: _buildInputBox(label: 'Low', value: '24720'),
                   ),
 
                   const SizedBox(width: 8),
 
                   Expanded(
-                    child: _buildInputBox(label: 'Close', value: '1972'),
+                    child: _buildInputBox(label: 'Close', value: '24850'),
                   ),
                 ],
               ),
@@ -382,9 +377,7 @@ class PivotHistoryDetail extends StatelessWidget {
 
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(8),
-
         border: Border.all(color: const Color(0xFFDDE2E8)),
       ),
 
@@ -429,10 +422,8 @@ class PivotHistoryDetail extends StatelessWidget {
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
-          // ==================================================
-          // TITLE
-          // ==================================================
           const Text(
             'Hasil Pivot Point',
             style: TextStyle(
@@ -493,37 +484,37 @@ class PivotHistoryDetail extends StatelessWidget {
           _buildPivotRow(
             level: 'R4',
             formula: 'PP + (H - L) × 3',
-            value: '1996.80',
+            value: '25730.50',
             color: greenColor,
             midpoint: '(R4 + R3) / 2',
-            midpointValue: '1993.20',
+            midpointValue: '25550.50',
           ),
 
           _buildPivotRow(
             level: 'R3',
             formula: 'PP + (H - L) × 2',
-            value: '1989.60',
+            value: '25550.50',
             color: greenColor,
             midpoint: '(R3 + R2) / 2',
-            midpointValue: '1987.20',
+            midpointValue: '25410.50',
           ),
 
           _buildPivotRow(
             level: 'R2',
             formula: 'PP + (H - L)',
-            value: '1984.80',
+            value: '25080.50',
             color: greenColor,
             midpoint: '(R2 + R1) / 2',
-            midpointValue: '1981.20',
+            midpointValue: '24940.50',
           ),
 
           _buildPivotRow(
             level: 'R1',
             formula: '2 × PP - L',
-            value: '1977.60',
+            value: '24980.50',
             color: greenColor,
             midpoint: '(PP + R1) / 2',
-            midpointValue: '1975.20',
+            midpointValue: '24915.50',
           ),
 
           // ==================================================
@@ -532,10 +523,10 @@ class PivotHistoryDetail extends StatelessWidget {
           _buildPivotRow(
             level: 'PP',
             formula: '(H + L + C) / 3',
-            value: '1972.80',
+            value: '24850.50',
             color: orangeColor,
             midpoint: '(PP + S1) / 2',
-            midpointValue: '1969.20',
+            midpointValue: '24760.50',
             isMainPivot: true,
           ),
 
@@ -545,34 +536,34 @@ class PivotHistoryDetail extends StatelessWidget {
           _buildPivotRow(
             level: 'S1',
             formula: '2 × PP - H',
-            value: '1965.60',
+            value: '24720.50',
             color: redColor,
             midpoint: '(S1 + S2) / 2',
-            midpointValue: '1963.20',
+            midpointValue: '24580.50',
           ),
 
           _buildPivotRow(
             level: 'S2',
             formula: 'PP - (H - L)',
-            value: '1960.80',
+            value: '24690.50',
             color: redColor,
             midpoint: '(S2 + S3) / 2',
-            midpointValue: '1957.20',
+            midpointValue: '24510.50',
           ),
 
           _buildPivotRow(
             level: 'S3',
             formula: 'PP - (H - L) × 2',
-            value: '1953.60',
+            value: '24510.50',
             color: redColor,
             midpoint: '(S3 + S4) / 2',
-            midpointValue: '1951.20',
+            midpointValue: '24330.50',
           ),
 
           _buildPivotRow(
             level: 'S4',
             formula: 'PP - (H - L) × 3',
-            value: '1948.80',
+            value: '24170.50',
             color: redColor,
           ),
         ],
@@ -595,6 +586,7 @@ class PivotHistoryDetail extends StatelessWidget {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 5),
+
       child: Column(
         children: [
           // ==================================================
@@ -602,11 +594,14 @@ class PivotHistoryDetail extends StatelessWidget {
           // ==================================================
           Container(
             width: double.infinity,
+
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
 
             decoration: BoxDecoration(
               color: isMainPivot ? const Color(0xFFFFF2D2) : Colors.white,
+
               borderRadius: BorderRadius.circular(9),
+
               border: Border.all(
                 color: isMainPivot
                     ? const Color(0xFFFFD27A)
@@ -617,12 +612,11 @@ class PivotHistoryDetail extends StatelessWidget {
 
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
+
               children: [
-                // ==================================================
-                // LEVEL
-                // ==================================================
                 SizedBox(
                   width: 38,
+
                   child: Text(
                     level,
                     style: TextStyle(
@@ -635,9 +629,6 @@ class PivotHistoryDetail extends StatelessWidget {
 
                 const SizedBox(width: 6),
 
-                // ==================================================
-                // FORMULA
-                // ==================================================
                 Expanded(
                   child: Text(
                     formula,
@@ -653,9 +644,6 @@ class PivotHistoryDetail extends StatelessWidget {
 
                 const SizedBox(width: 6),
 
-                // ==================================================
-                // NILAI
-                // ==================================================
                 Text(
                   value,
                   style: TextStyle(
@@ -676,6 +664,7 @@ class PivotHistoryDetail extends StatelessWidget {
 
             Container(
               width: double.infinity,
+
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
 
               decoration: BoxDecoration(
@@ -686,17 +675,12 @@ class PivotHistoryDetail extends StatelessWidget {
 
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
+
                 children: [
-                  // ==================================================
-                  // SPASI LEVEL
-                  // ==================================================
                   const SizedBox(width: 38),
 
                   const SizedBox(width: 6),
 
-                  // ==================================================
-                  // MIDPOINT FORMULA
-                  // ==================================================
                   Expanded(
                     child: Text(
                       'Midpoint $midpoint',
@@ -709,9 +693,6 @@ class PivotHistoryDetail extends StatelessWidget {
 
                   const SizedBox(width: 6),
 
-                  // ==================================================
-                  // MIDPOINT VALUE
-                  // ==================================================
                   Text(
                     midpointValue,
                     style: const TextStyle(

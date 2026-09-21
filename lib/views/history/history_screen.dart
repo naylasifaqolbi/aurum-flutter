@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'physical_gold_history_detail.dart';
 import 'pivot_history_detail.dart';
+import 'hangseng_history_detail.dart';
+import 'nest_history_detail.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -114,13 +116,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // FILTER LIST
   // ==================================================
   Widget _buildFilterList() {
-    final filters = [
-      'Semua',
-      'Emas Fisik',
-      'PP Emas',
-      'PP Hang Seng',
-      'Nest',
-    ];
+    final filters = ['Semua', 'Emas Fisik', 'PP Emas', 'PP Hang Seng', 'Nest'];
 
     return SizedBox(
       height: 36,
@@ -146,10 +142,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // ==================================================
   // FILTER BUTTON
   // ==================================================
-  Widget _buildFilter({
-    required String label,
-    required bool selected,
-  }) {
+  Widget _buildFilter({required String label, required bool selected}) {
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -157,17 +150,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? orangeColor : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected
-                ? orangeColor
-                : const Color(0xFFE5E5E5),
+            color: selected ? orangeColor : const Color(0xFFE5E5E5),
           ),
         ),
         child: Text(
@@ -175,9 +163,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: selected
-                ? Colors.white
-                : const Color(0xFF222222),
+            color: selected ? Colors.white : const Color(0xFF222222),
           ),
         ),
       ),
@@ -190,20 +176,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _buildHistoryList() {
     return Column(
       children: [
-        if (_selectedFilter == 'Semua' ||
-            _selectedFilter == 'Emas Fisik')
+        if (_selectedFilter == 'Semua' || _selectedFilter == 'Emas Fisik')
           _buildPhysicalGoldCard(),
 
-        if (_selectedFilter == 'Semua' ||
-            _selectedFilter == 'PP Emas')
+        if (_selectedFilter == 'Semua' || _selectedFilter == 'PP Emas')
           _buildPivotGoldCard(),
 
-        if (_selectedFilter == 'Semua' ||
-            _selectedFilter == 'PP Hang Seng')
+        if (_selectedFilter == 'Semua' || _selectedFilter == 'PP Hang Seng')
           _buildPivotHangSengCard(),
 
-        if (_selectedFilter == 'Semua' ||
-            _selectedFilter == 'Nest')
+        if (_selectedFilter == 'Semua' || _selectedFilter == 'Nest')
           _buildNestCard(),
       ],
     );
@@ -220,21 +202,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
       resultLabel: 'Profit',
       resultValue: '+Rp 30.000.000',
       details: [
-        _DetailItem(
-          label: 'Harga Beli/Jual',
-          value: '1.250k / 1.310k',
-        ),
-        _DetailItem(
-          label: 'Modal',
-          value: 'Rp 625.000.000',
-        ),
+        _DetailItem(label: 'Harga Beli/Jual', value: '1.250k / 1.310k'),
+        _DetailItem(label: 'Modal', value: 'Rp 625.000.000'),
       ],
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                const PhysicalGoldHistoryDetail(),
+            builder: (context) => const PhysicalGoldHistoryDetail(),
           ),
         );
       },
@@ -252,17 +227,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       resultLabel: 'Pivot Point Emas (LGD)',
       resultValue: '1972.80',
       details: [
-        _DetailItem(
-          label: 'High / Low / Close',
-          value: '1985 / 1960 / 1972',
-        ),
+        _DetailItem(label: 'High / Low / Close', value: '1985 / 1960 / 1972'),
       ],
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const PivotHistoryDetail(),
-          ),
+          MaterialPageRoute(builder: (context) => const PivotHistoryDetail()),
         );
       },
     );
@@ -277,18 +247,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
       date: '24 Okt 2026, 09:15',
       icon: Icons.trending_up_rounded,
       resultLabel: 'Pivot Point Hang Seng (HSI)',
-      resultValue: '1234.00',
+      resultValue: '24850.00',
       details: [
         _DetailItem(
           label: 'High / Low / Close',
-          value: '1980 / 1955 / 1975',
+          value: '24980 / 24720 / 24850',
         ),
       ],
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const PivotHistoryDetail(),
+            builder: (context) => const HangsengHistoryDetail(),
           ),
         );
       },
@@ -305,17 +275,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
       icon: Icons.account_tree_outlined,
       resultLabel: 'Nest',
       resultValue: 'BUY',
-      details: [
-        _DetailItem(
-          label: 'Open / Close',
-          value: '1980 / 1955',
-        ),
-      ],
+      details: [_DetailItem(label: 'Open / Close', value: '2650 / 2680')],
       onTap: () {
-        // Detail Nest akan dibuat nanti.
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const NestHistoryDetail()),
+        );
       },
     );
   }
+
+  // ==================================================
+  // HISTORY CARD
 
   // ==================================================
   // HISTORY CARD
@@ -364,11 +335,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         color: lightOrange,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        icon,
-                        color: orangeColor,
-                        size: 17,
-                      ),
+                      child: Icon(icon, color: orangeColor, size: 17),
                     ),
 
                     const SizedBox(width: 9),
@@ -461,10 +428,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                 const SizedBox(height: 10),
 
-                const Divider(
-                  height: 1,
-                  color: Color(0xFFF0F0F0),
-                ),
+                const Divider(height: 1, color: Color(0xFFF0F0F0)),
 
                 const SizedBox(height: 9),
 
@@ -475,12 +439,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (int i = 0; i < details.length; i++) ...[
-                      Expanded(
-                        child: _buildDetailItem(details[i]),
-                      ),
+                      Expanded(child: _buildDetailItem(details[i])),
 
-                      if (i < details.length - 1)
-                        const SizedBox(width: 16),
+                      if (i < details.length - 1) const SizedBox(width: 16),
                     ],
                   ],
                 ),
@@ -501,10 +462,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       children: [
         Text(
           item.label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Color(0xFF777777),
-          ),
+          style: const TextStyle(fontSize: 10, color: Color(0xFF777777)),
         ),
 
         const SizedBox(height: 3),
@@ -529,8 +487,5 @@ class _DetailItem {
   final String label;
   final String value;
 
-  const _DetailItem({
-    required this.label,
-    required this.value,
-  });
+  const _DetailItem({required this.label, required this.value});
 }
