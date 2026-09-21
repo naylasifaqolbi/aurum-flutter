@@ -149,9 +149,6 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ==================================================
-      // BACKGROUND UTAMA
-      // ==================================================
       backgroundColor: const Color(0xFFFFF8F0),
 
       // ==================================================

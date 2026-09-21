@@ -11,21 +11,23 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  // ============================================================
-  // COLOR
-  // ============================================================
-
   static const Color backgroundColor = Color(0xFFFFF8F0);
   static const Color orangeColor = Color(0xFFF28C28);
   static const Color darkBrown = Color(0xFF3D2B1F);
+  static const Color lightOrange = Color(0xFFFFF8E8);
+  static const Color greenColor = Color(0xFF00B87A);
+  static const Color lightGreen = Color(0xFFEAFBF5);
 
   String _selectedFilter = 'Semua';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F0),
+      backgroundColor: backgroundColor,
 
+      // ==================================================
+      // HEADER
+      // ==================================================
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -33,9 +35,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         elevation: 0,
         toolbarHeight: 64,
         titleSpacing: 20,
-        // ==================================================
-        // HEADER
-        // ==================================================
+
         title: Row(
           children: [
             Image.asset(
@@ -52,7 +52,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFF28C28),
+                color: orangeColor,
                 letterSpacing: 1,
               ),
             ),
@@ -62,11 +62,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
               // ==================================================
               // TITLE
@@ -74,125 +73,36 @@ class _HistoryScreenState extends State<HistoryScreen> {
               const Text(
                 'Riwayat Perhitungan',
                 style: TextStyle(
-                  fontSize: 26,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: orangeColor,
+                  color: Color(0xFF222222),
                 ),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 5),
 
               const Text(
                 'Tinjau analisis Emas dan Pivot terbaru anda',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF777777),
-                  height: 1.5,
+                  color: Color(0xFF555555),
+                  height: 1.4,
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 14),
 
               // ==================================================
               // FILTER
               // ==================================================
-              Row(
-                children: [
-                  _buildFilter(label: 'Semua'),
-
-                  const SizedBox(width: 10),
-
-                  _buildFilter(label: 'Emas Fisik'),
-
-                  const SizedBox(width: 10),
-
-                  _buildFilter(label: 'Pivot Point'),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // ==================================================
-              // HISTORY 1 - EMAS
-              // ==================================================
-              if (_selectedFilter == 'Semua' || _selectedFilter == 'Emas Fisik')
-                _buildHistoryCard(
-                  context: context,
-                  type: 'EMAS FISIK',
-                  date: '24 Okt 2026, 14:32',
-                  result: 'Profit',
-                  value: '+Rp 30.000.000',
-                  subtitle1: 'Harga Beli/Jual',
-                  subtitleValue1: '1.250k / 1.310k',
-                  subtitle2: 'Modal',
-                  subtitleValue2: 'Rp 625.000.000',
-                  icon: Icons.monetization_on_outlined,
-                  iconColor: orangeColor,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PhysicalGoldHistoryDetail(),
-                      ),
-                    );
-                  },
-                ),
+              _buildFilterList(),
 
               const SizedBox(height: 16),
 
               // ==================================================
-              // HISTORY 2 - PIVOT
+              // HISTORY LIST
               // ==================================================
-              if (_selectedFilter == 'Semua' ||
-                  _selectedFilter == 'Pivot Point')
-                _buildHistoryCard(
-                  context: context,
-                  type: 'PIVOT POINT',
-                  date: '24 Okt 2026, 09:15',
-                  result: 'Pivot Point (PP)',
-                  value: '1972.80',
-                  subtitle1: 'High / Low / Close',
-                  subtitleValue1: '1985 / 1960 / 1972',
-                  icon: Icons.show_chart_rounded,
-                  iconColor: orangeColor,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PivotHistoryDetail(),
-                      ),
-                    );
-                  },
-                ),
-
-              const SizedBox(height: 16),
-
-              // ==================================================
-              // HISTORY 3 - PIVOT
-              // ==================================================
-              if (_selectedFilter == 'Semua' ||
-                  _selectedFilter == 'Pivot Point')
-                _buildHistoryCard(
-                  context: context,
-                  type: 'PIVOT POINT',
-                  date: '24 Okt 2026, 09:15',
-                  result: 'Pivot Point (PP)',
-                  value: '1234.00',
-                  subtitle1: 'High / Low / Close',
-                  subtitleValue1: '1980 / 1955 / 1975',
-                  icon: Icons.show_chart_rounded,
-                  iconColor: orangeColor,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const PivotHistoryDetail(),
-                      ),
-                    );
-                  },
-                ),
-
-              const SizedBox(height: 30),
+              _buildHistoryList(),
             ],
           ),
         ),
@@ -200,222 +110,427 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // ============================================================
-  // FILTER
-  // ============================================================
+  // ==================================================
+  // FILTER LIST
+  // ==================================================
+  Widget _buildFilterList() {
+    final filters = [
+      'Semua',
+      'Emas Fisik',
+      'PP Emas',
+      'PP Hang Seng',
+      'Nest',
+    ];
 
-  Widget _buildFilter({required String label}) {
-    final bool selected = _selectedFilter == label;
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: filters.length,
+        separatorBuilder: (context, index) {
+          return const SizedBox(width: 8);
+        },
+        itemBuilder: (context, index) {
+          final filter = filters[index];
 
+          return _buildFilter(
+            label: filter,
+            selected: _selectedFilter == filter,
+          );
+        },
+      ),
+    );
+  }
+
+  // ==================================================
+  // FILTER BUTTON
+  // ==================================================
+  Widget _buildFilter({
+    required String label,
+    required bool selected,
+  }) {
     return GestureDetector(
       onTap: () {
         setState(() {
           _selectedFilter = label;
         });
       },
-
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
         decoration: BoxDecoration(
           color: selected ? orangeColor : Colors.white,
-
           borderRadius: BorderRadius.circular(20),
-
           border: Border.all(
-            color: selected ? orangeColor : const Color(0xFFE5D9CE),
+            color: selected
+                ? orangeColor
+                : const Color(0xFFE5E5E5),
           ),
         ),
-
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : const Color(0xFF777777),
+            color: selected
+                ? Colors.white
+                : const Color(0xFF222222),
           ),
         ),
       ),
     );
   }
 
-  // ============================================================
-  // HISTORY CARD
-  // ============================================================
+  // ==================================================
+  // HISTORY LIST
+  // ==================================================
+  Widget _buildHistoryList() {
+    return Column(
+      children: [
+        if (_selectedFilter == 'Semua' ||
+            _selectedFilter == 'Emas Fisik')
+          _buildPhysicalGoldCard(),
 
+        if (_selectedFilter == 'Semua' ||
+            _selectedFilter == 'PP Emas')
+          _buildPivotGoldCard(),
+
+        if (_selectedFilter == 'Semua' ||
+            _selectedFilter == 'PP Hang Seng')
+          _buildPivotHangSengCard(),
+
+        if (_selectedFilter == 'Semua' ||
+            _selectedFilter == 'Nest')
+          _buildNestCard(),
+      ],
+    );
+  }
+
+  // ==================================================
+  // EMAS FISIK
+  // ==================================================
+  Widget _buildPhysicalGoldCard() {
+    return _buildHistoryCard(
+      type: 'EMAS FISIK',
+      date: '24 Okt 2026, 14:32',
+      icon: Icons.monetization_on_outlined,
+      resultLabel: 'Profit',
+      resultValue: '+Rp 30.000.000',
+      details: [
+        _DetailItem(
+          label: 'Harga Beli/Jual',
+          value: '1.250k / 1.310k',
+        ),
+        _DetailItem(
+          label: 'Modal',
+          value: 'Rp 625.000.000',
+        ),
+      ],
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                const PhysicalGoldHistoryDetail(),
+          ),
+        );
+      },
+    );
+  }
+
+  // ==================================================
+  // PIVOT EMAS
+  // ==================================================
+  Widget _buildPivotGoldCard() {
+    return _buildHistoryCard(
+      type: 'PP EMAS',
+      date: '24 Okt 2026, 09:15',
+      icon: Icons.show_chart_rounded,
+      resultLabel: 'Pivot Point Emas (LGD)',
+      resultValue: '1972.80',
+      details: [
+        _DetailItem(
+          label: 'High / Low / Close',
+          value: '1985 / 1960 / 1972',
+        ),
+      ],
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PivotHistoryDetail(),
+          ),
+        );
+      },
+    );
+  }
+
+  // ==================================================
+  // PIVOT HANG SENG
+  // ==================================================
+  Widget _buildPivotHangSengCard() {
+    return _buildHistoryCard(
+      type: 'PP HANG SENG',
+      date: '24 Okt 2026, 09:15',
+      icon: Icons.trending_up_rounded,
+      resultLabel: 'Pivot Point Hang Seng (HSI)',
+      resultValue: '1234.00',
+      details: [
+        _DetailItem(
+          label: 'High / Low / Close',
+          value: '1980 / 1955 / 1975',
+        ),
+      ],
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PivotHistoryDetail(),
+          ),
+        );
+      },
+    );
+  }
+
+  // ==================================================
+  // NEST
+  // ==================================================
+  Widget _buildNestCard() {
+    return _buildHistoryCard(
+      type: 'NEST',
+      date: '24 Okt 2026, 09:15',
+      icon: Icons.account_tree_outlined,
+      resultLabel: 'Nest',
+      resultValue: 'BUY',
+      details: [
+        _DetailItem(
+          label: 'Open / Close',
+          value: '1980 / 1955',
+        ),
+      ],
+      onTap: () {
+        // Detail Nest akan dibuat nanti.
+      },
+    );
+  }
+
+  // ==================================================
+  // HISTORY CARD
+  // ==================================================
   Widget _buildHistoryCard({
-    required BuildContext context,
     required String type,
     required String date,
-    required String result,
-    required String value,
-    required String subtitle1,
-    required String subtitleValue1,
     required IconData icon,
-    required Color iconColor,
-    String? subtitle2,
-    String? subtitleValue2,
+    required String resultLabel,
+    required String resultValue,
+    required List<_DetailItem> details,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: Colors.transparent,
-
-      child: InkWell(
-        onTap: onTap,
-
-        borderRadius: BorderRadius.circular(18),
-
-        child: Container(
-          width: double.infinity,
-
-          padding: const EdgeInsets.all(18),
-
-          decoration: BoxDecoration(
-            color: Colors.white,
-
-            borderRadius: BorderRadius.circular(18),
-
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-
-            children: [
-              // ==================================================
-              // ICON
-              // ==================================================
-              Container(
-                width: 52,
-                height: 52,
-
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFE5CC),
-                  borderRadius: BorderRadius.circular(15),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(17),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(15, 13, 15, 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(17),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.045),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-
-                child: Icon(icon, color: iconColor, size: 28),
-              ),
-
-              const SizedBox(width: 15),
-
-              // ==================================================
-              // CONTENT
-              // ==================================================
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-
+              ],
+            ),
+            child: Column(
+              children: [
+                // ==================================================
+                // CARD HEADER
+                // ==================================================
+                Row(
                   children: [
-                    Text(
-                      type,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: darkBrown,
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: lightOrange,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icon,
+                        color: orangeColor,
+                        size: 17,
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(width: 9),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: lightOrange,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        type,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: orangeColor,
+                        ),
+                      ),
+                    ),
+
+                    const Spacer(),
 
                     Text(
                       date,
                       style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF999999),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Text(
-                      result,
-                      style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 10,
                         color: Color(0xFF777777),
                       ),
                     ),
+                  ],
+                ),
 
-                    const SizedBox(height: 3),
+                const SizedBox(height: 12),
 
-                    Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: orangeColor,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    Text(
-                      subtitle1,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF999999),
-                      ),
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    Text(
-                      subtitleValue1,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: darkBrown,
-                      ),
-                    ),
-
-                    if (subtitle2 != null && subtitleValue2 != null) ...[
-                      const SizedBox(height: 10),
-
-                      Text(
-                        subtitle2,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF999999),
+                // ==================================================
+                // MAIN RESULT
+                // ==================================================
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: lightGreen,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          resultLabel,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF667085),
+                          ),
                         ),
                       ),
 
-                      const SizedBox(height: 3),
-
                       Text(
-                        subtitleValue2,
+                        resultValue,
                         style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: darkBrown,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: greenColor,
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.chevron_right_rounded,
+                          color: orangeColor,
+                          size: 19,
                         ),
                       ),
                     ],
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Divider(
+                  height: 1,
+                  color: Color(0xFFF0F0F0),
+                ),
+
+                const SizedBox(height: 9),
+
+                // ==================================================
+                // CARD DETAILS
+                // ==================================================
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (int i = 0; i < details.length; i++) ...[
+                      Expanded(
+                        child: _buildDetailItem(details[i]),
+                      ),
+
+                      if (i < details.length - 1)
+                        const SizedBox(width: 16),
+                    ],
                   ],
                 ),
-              ),
-
-              // ==================================================
-              // ARROW
-              // ==================================================
-              const Padding(
-                padding: EdgeInsets.only(top: 3),
-
-                child: Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 16,
-                  color: orangeColor,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  // ==================================================
+  // DETAIL ITEM
+  // ==================================================
+  Widget _buildDetailItem(_DetailItem item) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          item.label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: Color(0xFF777777),
+          ),
+        ),
+
+        const SizedBox(height: 3),
+
+        Text(
+          item.value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF172033),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ==================================================
+// DETAIL DATA
+// ==================================================
+class _DetailItem {
+  final String label;
+  final String value;
+
+  const _DetailItem({
+    required this.label,
+    required this.value,
+  });
 }
