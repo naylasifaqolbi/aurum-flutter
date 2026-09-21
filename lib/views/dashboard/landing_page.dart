@@ -23,10 +23,7 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
   @override
   Widget build(BuildContext context) {
     if (_selectedCalculator != null) {
-      return Scaffold(
-        backgroundColor: backgroundColor,
-        body: SafeArea(child: _selectedCalculator!),
-      );
+      return _selectedCalculator!;
     }
 
     return Scaffold(

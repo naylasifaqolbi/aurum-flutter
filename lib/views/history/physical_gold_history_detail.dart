@@ -11,14 +11,58 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
   static const Color orangeColor = Color(0xFFF28C28);
   static const Color darkBrown = Color(0xFF3D2B1F);
   static const Color lightOrange = Color(0xFFFFE5CC);
+  static const Color greenColor = Color(0xFF00B87A);
+  static const Color lightGreen = Color(0xFFEAFBF5);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
 
+      // ============================================================
+      // HEADER
+      // ============================================================
+
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: Color(0xFFE5E5E5),
+          ),
+        ),
+
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: darkBrown,
+            size: 25,
+          ),
+        ),
+
+        title: const Text(
+          'Detail Riwayat',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: orangeColor,
+          ),
+        ),
+      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
 
           child: Column(
@@ -26,29 +70,55 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
 
             children: [
               // ==================================================
-              // HEADER
+              // DETAIL HEADER
               // ==================================================
+
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: darkBrown,
-                      size: 21,
+                  const Expanded(
+                    child: Text(
+                      'DETAIL RIWAYAT',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: orangeColor,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ),
 
-                  const SizedBox(width: 4),
-
-                  const Text(
-                    'Detail Riwayat',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: darkBrown,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(
+                        color: orangeColor,
+                        width: 1,
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.monetization_on_outlined,
+                          color: orangeColor,
+                          size: 16,
+                        ),
+                        SizedBox(width: 5),
+                        Text(
+                          'KALKULATOR EMAS FISIK',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: orangeColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -56,108 +126,232 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              const Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: Text(
-                  '24 Okt 2026, 14:30 WIB',
-                  style: TextStyle(fontSize: 13, color: Colors.black54),
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // ==================================================
-              // TITLE
-              // ==================================================
               const Text(
-                'KALKULATOR EMAS FISIK',
+                '24 Okt 2026, 14:30 WIB',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: orangeColor,
-                  letterSpacing: 0.5,
+                  fontSize: 13,
+                  color: Color(0xFF667085),
                 ),
               ),
 
               const SizedBox(height: 16),
 
               // ==================================================
-              // TRANSAKSI
+              // MAIN DETAIL CARD
               // ==================================================
-              _buildSectionCard(
-                title: 'TRANSAKSI',
-                child: Column(
-                  children: [
-                    _buildTransactionRow('Modal', 'Rp 50.000.000'),
 
-                    _buildDivider(),
-
-                    _buildTransactionRow('Kurs', 'Rp 16.000'),
-
-                    _buildDivider(),
-
-                    _buildTransactionRow('TOz', '31,1'),
-
-                    _buildDivider(),
-
-                    _buildTransactionRow('Harga Beli', 'Rp 1.000.000'),
-
-                    _buildDivider(),
-
-                    _buildTransactionRow('Harga Jual', 'Rp 1.150.000'),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ==================================================
-              // HASIL PERHITUNGAN
-              // ==================================================
-              _buildResultCard(),
-
-              const SizedBox(height: 20),
-
-              // ==================================================
-              // INFO
-              // ==================================================
               Container(
                 width: double.infinity,
-
-                padding: const EdgeInsets.all(18),
-
+                padding: const EdgeInsets.fromLTRB(
+                  19,
+                  20,
+                  19,
+                  19,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
-
-                  borderRadius: BorderRadius.circular(18),
-
-                  border: Border.all(color: const Color(0xFFFFE0C2)),
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(
+                    color: const Color(0xFFE1E7EF),
+                    width: 1,
+                  ),
                 ),
 
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-                    Text(
-                      'RIWAYAT PERHITUNGAN',
+                    // ==================================================
+                    // TRANSAKSI
+                    // ==================================================
+
+                    const Text(
+                      'TRANSAKSI',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: darkBrown,
+                        color: Color(0xFF667085),
                       ),
                     ),
 
-                    SizedBox(height: 8),
+                    const SizedBox(height: 13),
 
-                    Text(
-                      'Emas / USD (XAUUSD)',
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                    _buildTransactionRow(
+                      'Modal',
+                      'Rp 50.000.000',
+                    ),
+
+                    _buildTransactionRow(
+                      'Kurs',
+                      'Rp 16.000',
+                    ),
+
+                    _buildTransactionRow(
+                      'TOz',
+                      '31,1',
+                    ),
+
+                    _buildTransactionRow(
+                      'Harga Beli',
+                      'Rp 1.000.000',
+                    ),
+
+                    _buildTransactionRow(
+                      'Harga Jual',
+                      'Rp 1.150.000',
+                    ),
+
+                    const SizedBox(height: 9),
+
+                    const Divider(
+                      height: 1,
+                      color: Color(0xFFECEFF3),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ==================================================
+                    // HASIL PERHITUNGAN
+                    // ==================================================
+
+                    const Text(
+                      'HASIL PERHITUNGAN',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF667085),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(
+                        16,
+                        14,
+                        16,
+                        14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFAE9),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFFFE5A8),
+                          width: 1,
+                        ),
+                      ),
+
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+
+                        children: [
+                          Text(
+                            'Estimasi Keuntungan Bersih',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF667085),
+                            ),
+                          ),
+
+                          SizedBox(height: 5),
+
+                          Text(
+                            '+ Rp 7.500.000',
+                            style: TextStyle(
+                              fontSize: 25,
+                              fontWeight: FontWeight.bold,
+                              color: orangeColor,
+                            ),
+                          ),
+
+                          SizedBox(height: 5),
+
+                          Text(
+                            'Keuntungan dari transaksi emas fisik',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF667085),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
 
               const SizedBox(height: 20),
+
+              // ==================================================
+              // DOWNLOAD BUTTON
+              // ==================================================
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    // Fitur download akan disambungkan nanti.
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: orangeColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.download_rounded,
+                    size: 20,
+                  ),
+                  label: const Text(
+                    'Unduh Hasil Perhitungan',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 9),
+
+              // ==================================================
+              // DELETE BUTTON
+              // ==================================================
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // Fitur hapus akan disambungkan ke database nanti.
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(
+                      color: Colors.red,
+                      width: 1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    size: 20,
+                  ),
+                  label: const Text(
+                    'Hapus Riwayat',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -166,142 +360,35 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
   }
 
   // ============================================================
-  // SECTION CARD
-  // ============================================================
-
-  Widget _buildSectionCard({required String title, required Widget child}) {
-    return Container(
-      width: double.infinity,
-
-      padding: const EdgeInsets.all(18),
-
-      decoration: BoxDecoration(
-        color: Colors.white,
-
-        borderRadius: BorderRadius.circular(18),
-
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: darkBrown,
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          child,
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
   // TRANSACTION ROW
   // ============================================================
 
-  Widget _buildTransactionRow(String label, String value) {
+  Widget _buildTransactionRow(
+    String label,
+    String value,
+  ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
+      padding: const EdgeInsets.symmetric(vertical: 6),
 
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 14, color: Colors.black54),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF667085),
+              ),
+            ),
           ),
 
           Text(
             value,
             style: const TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: darkBrown,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // DIVIDER
-  // ============================================================
-
-  Widget _buildDivider() {
-    return const Divider(height: 1, color: Color(0xFFF0E5DA));
-  }
-
-  // ============================================================
-  // RESULT CARD
-  // ============================================================
-
-  Widget _buildResultCard() {
-    return Container(
-      width: double.infinity,
-
-      padding: const EdgeInsets.all(20),
-
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFEAD6),
-
-        borderRadius: BorderRadius.circular(20),
-
-        border: Border.all(color: const Color(0xFFFFD4AD)),
-      ),
-
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-
-        children: [
-          const Text(
-            'HASIL PERHITUNGAN',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: darkBrown,
-            ),
-          ),
-
-          const SizedBox(height: 18),
-
-          const Text(
-            'Estimasi Keuntungan Bersih',
-            style: TextStyle(fontSize: 14, color: Colors.black54),
-          ),
-
-          const SizedBox(height: 5),
-
-          const Text(
-            '+ Rp 7.500.000',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2E8B57),
-            ),
-          ),
-
-          const SizedBox(height: 7),
-
-          const Text(
-            'Keuntungan dari transaksi emas fisik',
-            style: TextStyle(fontSize: 13, color: Colors.black54),
           ),
         ],
       ),
