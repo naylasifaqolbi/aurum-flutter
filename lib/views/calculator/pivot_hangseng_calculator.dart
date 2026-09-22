@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import 'pivot_result.dart';
 import '../../services/historical_api_service.dart';
+import '../../viewmodels/history_viewmodel.dart';
 
 class PivotHangsengCalculator extends StatefulWidget {
   final VoidCallback? onBack;
@@ -134,7 +136,7 @@ class _PivotHangsengCalculatorState extends State<PivotHangsengCalculator> {
   // HITUNG PIVOT HANGSENG
   // ============================================================
 
-  void _hitung() {
+  Future<void> _hitung() async {
     // ==========================================================
     // VALIDASI FORM
     // ==========================================================
@@ -272,6 +274,44 @@ class _PivotHangsengCalculatorState extends State<PivotHangsengCalculator> {
     // ==========================================================
 
     final String indication = open < pp ? 'SELL' : 'BUY';
+
+    // ==========================================================
+    // SIMPAN HISTORY
+    // ==========================================================
+
+    final historySaved = await context.read<HistoryViewModel>().saveHistory(
+      calculatorType: 'pivot_hangseng',
+      inputData: {'open': open, 'high': high, 'low': low, 'close': close},
+      resultData: {
+        'pp': pp,
+
+        'r1': r1,
+        'r2': r2,
+        'r3': r3,
+        'r4': r4,
+
+        's1': s1,
+        's2': s2,
+        's3': s3,
+        's4': s4,
+
+        'midpoint_r4_r3': midpointR4R3,
+        'midpoint_r3_r2': midpointR3R2,
+        'midpoint_r2_r1': midpointR2R1,
+        'midpoint_pp_r1': midpointPPR1,
+
+        'midpoint_pp_s1': midpointPPS1,
+        'midpoint_s1_s2': midpointS1S2,
+        'midpoint_s2_s3': midpointS2S3,
+        'midpoint_s3_s4': midpointS3S4,
+
+        'indication': indication,
+      },
+    );
+
+    if (!historySaved) {
+      return;
+    }
 
     // ==========================================================
     // PINDAH KE HALAMAN HASIL

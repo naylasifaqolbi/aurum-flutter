@@ -269,9 +269,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
             const SizedBox(height: 12),
 
-            for (final history in filteredHistories)
+            for (final history in filteredHistories) ...[
               if (history.calculatorType == 'physical_gold')
                 _buildPhysicalGoldCard(history),
+
+              if (history.calculatorType == 'pivot_gold')
+                _buildPivotGoldCard(history),
+            ],
           ],
         );
       },
@@ -325,20 +329,43 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // ==================================================
   // PIVOT EMAS
   // ==================================================
-  Widget _buildPivotGoldCard() {
+  Widget _buildPivotGoldCard(HistoryModel history) {
+    final input = history.inputData;
+    final result = history.resultData;
+
+    final double high = (input['high'] as num).toDouble();
+    final double low = (input['low'] as num).toDouble();
+    final double close = (input['close'] as num).toDouble();
+    final double pp = (result['pp'] as num).toDouble();
+
+    final date = history.createdAt.toLocal();
+
     return _buildHistoryCard(
       type: 'PP EMAS',
-      date: '24 Okt 2026, 09:15',
+      date:
+          '${date.day.toString().padLeft(2, '0')} '
+          '${_getMonthName(date.month)} '
+          '${date.year}, '
+          '${date.hour.toString().padLeft(2, '0')}:'
+          '${date.minute.toString().padLeft(2, '0')}',
       icon: Icons.show_chart_rounded,
       resultLabel: 'Pivot Point Emas (LGD)',
-      resultValue: '1972.80',
+      resultValue: pp.toStringAsFixed(2),
       details: [
-        _DetailItem(label: 'High / Low / Close', value: '1985 / 1960 / 1972'),
+        _DetailItem(
+          label: 'High / Low / Close',
+          value:
+              '${_formatNumber(high)} / '
+              '${_formatNumber(low)} / '
+              '${_formatNumber(close)}',
+        ),
       ],
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const PivotHistoryDetail()),
+          MaterialPageRoute(
+            builder: (context) => PivotHistoryDetail(history: history),
+          ),
         );
       },
     );
