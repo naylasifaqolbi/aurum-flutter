@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../../viewmodels/history_viewmodel.dart';
 import 'physical_gold_result.dart';
 
 class PhysicalGoldCalculator extends StatefulWidget {
@@ -41,7 +44,7 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
   // TOMBOL HITUNG
   // ==================================================
 
-  void _hitung() {
+  Future<void> _hitung() async {
     // ================================================
     // VALIDASI FORM
     // ================================================
@@ -123,6 +126,32 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
     // ================================================
 
     final double keuntungan = (selisihHarga * jumlahEmas).floorToDouble();
+
+    // ================================================
+    // SIMPAN HISTORY
+    // ================================================
+
+    final historySaved = await context.read<HistoryViewModel>().saveHistory(
+      calculatorType: 'physical_gold',
+      inputData: {
+        'modal': modal,
+        'kurs': kurs,
+        'harga_beli': hargaBeli,
+        'harga_jual': hargaJual,
+      },
+      resultData: {
+        'toz': toz,
+        'hasil_harga_beli': hasilHargaBeli,
+        'hasil_harga_jual': hasilHargaJual,
+        'selisih_harga': selisihHarga,
+        'jumlah_emas': jumlahEmas,
+        'keuntungan': keuntungan,
+      },
+    );
+
+    if (!historySaved) {
+      return;
+    }
 
     // ================================================
     // PINDAH KE HALAMAN HASIL

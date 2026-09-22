@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../models/history_model.dart';
+import '../../viewmodels/history_viewmodel.dart';
 
 import 'physical_gold_history_detail.dart';
 import 'pivot_history_detail.dart';
@@ -21,6 +25,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
   static const Color lightGreen = Color(0xFFEAFBF5);
 
   String _selectedFilter = 'Semua';
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HistoryViewModel>().loadHistory();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -174,42 +187,135 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // HISTORY LIST
   // ==================================================
   Widget _buildHistoryList() {
-    return Column(
-      children: [
-        if (_selectedFilter == 'Semua' || _selectedFilter == 'Emas Fisik')
-          _buildPhysicalGoldCard(),
+    return Consumer<HistoryViewModel>(
+      builder: (context, viewModel, child) {
+        if (viewModel.isLoading) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: CircularProgressIndicator(color: orangeColor),
+            ),
+          );
+        }
 
-        if (_selectedFilter == 'Semua' || _selectedFilter == 'PP Emas')
-          _buildPivotGoldCard(),
+        if (viewModel.errorMessage != null) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Text(
+                'Gagal memuat riwayat.',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+            ),
+          );
+        }
 
-        if (_selectedFilter == 'Semua' || _selectedFilter == 'PP Hang Seng')
-          _buildPivotHangSengCard(),
+        // Filter history berdasarkan pilihan user
+        final filteredHistories = viewModel.histories.where((history) {
+          if (_selectedFilter == 'Semua') {
+            return true;
+          }
 
-        if (_selectedFilter == 'Semua' || _selectedFilter == 'Nest')
-          _buildNestCard(),
-      ],
+          if (_selectedFilter == 'Emas Fisik') {
+            return history.calculatorType == 'physical_gold';
+          }
+
+          if (_selectedFilter == 'PP Emas') {
+            return history.calculatorType == 'pivot_gold';
+          }
+
+          if (_selectedFilter == 'PP Hang Seng') {
+            return history.calculatorType == 'pivot_hangseng';
+          }
+
+          if (_selectedFilter == 'Nest') {
+            return history.calculatorType == 'nest';
+          }
+
+          return false;
+        }).toList();
+
+        if (filteredHistories.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.history_rounded,
+                    size: 48,
+                    color: Colors.black26,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Belum ada riwayat perhitungan.',
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${filteredHistories.length} riwayat ditemukan.',
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            for (final history in filteredHistories)
+              if (history.calculatorType == 'physical_gold')
+                _buildPhysicalGoldCard(history),
+          ],
+        );
+      },
     );
   }
 
   // ==================================================
   // EMAS FISIK
   // ==================================================
-  Widget _buildPhysicalGoldCard() {
+  Widget _buildPhysicalGoldCard(HistoryModel history) {
+    final input = history.inputData;
+    final result = history.resultData;
+
+    final double modal = (input['modal'] as num).toDouble();
+    final double hargaBeli = (input['harga_beli'] as num).toDouble();
+    final double hargaJual = (input['harga_jual'] as num).toDouble();
+    final double keuntungan = (result['keuntungan'] as num).toDouble();
+
+    final date = history.createdAt.toLocal();
+
     return _buildHistoryCard(
       type: 'EMAS FISIK',
-      date: '24 Okt 2026, 14:32',
+      date:
+          '${date.day.toString().padLeft(2, '0')} '
+          '${_getMonthName(date.month)} '
+          '${date.year}, '
+          '${date.hour.toString().padLeft(2, '0')}:'
+          '${date.minute.toString().padLeft(2, '0')}',
       icon: Icons.monetization_on_outlined,
       resultLabel: 'Profit',
-      resultValue: '+Rp 30.000.000',
+      resultValue:
+          '${keuntungan >= 0 ? '+' : '-'}Rp ${_formatNumber(keuntungan.abs())}',
       details: [
-        _DetailItem(label: 'Harga Beli/Jual', value: '1.250k / 1.310k'),
-        _DetailItem(label: 'Modal', value: 'Rp 625.000.000'),
+        _DetailItem(
+          label: 'Harga Beli/Jual',
+          value: '${_formatNumber(hargaBeli)} / ${_formatNumber(hargaJual)}',
+        ),
+        _DetailItem(label: 'Modal', value: 'Rp ${_formatNumber(modal)}'),
       ],
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const PhysicalGoldHistoryDetail(),
+            builder: (context) => PhysicalGoldHistoryDetail(history: history),
           ),
         );
       },
@@ -284,9 +390,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       },
     );
   }
-
-  // ==================================================
-  // HISTORY CARD
 
   // ==================================================
   // HISTORY CARD
@@ -478,6 +581,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ],
     );
   }
+}
+
+// ==================================================
+// FORMAT NUMBER
+// ==================================================
+String _formatNumber(double value) {
+  return value
+      .toStringAsFixed(0)
+      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => '.');
+}
+
+// ==================================================
+// MONTH NAME
+// ==================================================
+String _getMonthName(int month) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
+
+  return months[month - 1];
 }
 
 // ==================================================

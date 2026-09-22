@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+
 import 'views/splash/splash_screen.dart';
 import 'views/auth/reset_password_screen.dart';
+import 'viewmodels/history_viewmodel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
@@ -20,7 +23,12 @@ void main() async {
     }
   });
 
-  runApp(const AurumApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => HistoryViewModel(),
+      child: const AurumApp(),
+    ),
+  );
 }
 
 class AurumApp extends StatelessWidget {
