@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../models/history_model.dart';
 
 class PhysicalGoldHistoryDetail extends StatelessWidget {
-  const PhysicalGoldHistoryDetail({super.key});
+  final HistoryModel history;
+
+  const PhysicalGoldHistoryDetail({super.key, required this.history});
 
   // ============================================================
   // COLOR
@@ -16,6 +19,18 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final input = history.inputData;
+    final result = history.resultData;
+    final date = history.createdAt.toLocal();
+
+    final double modal = (input['modal'] as num).toDouble();
+    final double kurs = (input['kurs'] as num).toDouble();
+    final double hargaBeli = (input['harga_beli'] as num).toDouble();
+    final double hargaJual = (input['harga_jual'] as num).toDouble();
+
+    final double toz = (result['toz'] as num).toDouble();
+    final double keuntungan = (result['keuntungan'] as num).toDouble();
+
     return Scaffold(
       backgroundColor: backgroundColor,
 
@@ -117,9 +132,13 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              const Text(
-                '24 Okt 2026, 14:30 WIB',
-                style: TextStyle(fontSize: 13, color: Color(0xFF667085)),
+              Text(
+                '${date.day.toString().padLeft(2, '0')} '
+                '${_getMonthName(date.month)} '
+                '${date.year}, '
+                '${date.hour.toString().padLeft(2, '0')}:'
+                '${date.minute.toString().padLeft(2, '0')} WIB',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF667085)),
               ),
 
               const SizedBox(height: 16),
@@ -175,15 +194,30 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
 
                         const SizedBox(height: 13),
 
-                        _buildTransactionRow('Modal', 'Rp 50.000.000'),
+                        _buildTransactionRow(
+                          'Modal',
+                          'Rp ${_formatNumber(modal)}',
+                        ),
 
-                        _buildTransactionRow('Kurs', 'Rp 16.000'),
+                        _buildTransactionRow(
+                          'Kurs',
+                          'Rp ${_formatNumber(kurs)}',
+                        ),
 
-                        _buildTransactionRow('TOz', '31,1'),
+                        _buildTransactionRow(
+                          'TOz',
+                          toz.toStringAsFixed(1).replaceAll('.', ','),
+                        ),
 
-                        _buildTransactionRow('Harga Beli', 'Rp 1.000.000'),
+                        _buildTransactionRow(
+                          'Harga Beli',
+                          _formatNumber(hargaBeli),
+                        ),
 
-                        _buildTransactionRow('Harga Jual', 'Rp 1.150.000'),
+                        _buildTransactionRow(
+                          'Harga Jual',
+                          _formatNumber(hargaJual),
+                        ),
 
                         const SizedBox(height: 9),
 
@@ -217,10 +251,10 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
                             ),
                           ),
 
-                          child: const Column(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 'Estimasi Keuntungan Bersih',
                                 style: TextStyle(
                                   fontSize: 13,
@@ -228,26 +262,28 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
                                 ),
                               ),
 
-                              SizedBox(height: 5),
+                              const SizedBox(height: 5),
 
                               Text(
-                                '+ Rp 7.500.000',
-                                style: TextStyle(
+                                '${keuntungan >= 0 ? '+ ' : '- '}Rp ${_formatNumber(keuntungan.abs())}',
+                                style: const TextStyle(
                                   fontSize: 25,
                                   fontWeight: FontWeight.bold,
                                   color: orangeColor,
                                 ),
                               ),
 
-                              SizedBox(height: 5),
+                              const SizedBox(height: 5),
 
-                              Text(
+                              const Text(
                                 'Keuntungan dari transaksi emas fisik',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Color(0xFF667085),
                                 ),
                               ),
+
+                              const SizedBox(height: 12),
                             ],
                           ),
                         ),
@@ -257,6 +293,7 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
                 ),
               ),
 
+              const SizedBox(height: 16),
               // ==================================================
               // DOWNLOAD BUTTON
               // ==================================================
@@ -344,5 +381,37 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
         ],
       ),
     );
+  }
+  // ============================================================
+  // FORMAT NUMBER
+  // ============================================================
+
+  String _formatNumber(double value) {
+    return value
+        .toStringAsFixed(0)
+        .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => '.');
+  }
+
+  // ============================================================
+  // MONTH NAME
+  // ============================================================
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+
+    return months[month - 1];
   }
 }
