@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/historical_api_service.dart';
+import '../../viewmodels/history_viewmodel.dart';
+import 'package:provider/provider.dart';
 import 'nest_result.dart';
 
 class NestCalculatorScreen extends StatefulWidget {
@@ -79,7 +81,7 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
     super.dispose();
   }
 
-  void _hitung() {
+  Future<void> _hitung() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -104,6 +106,16 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
     } else {
       indication = 'NETRAL';
       description = 'Harga Close sama dengan harga Open.';
+    }
+
+    final historySaved = await context.read<HistoryViewModel>().saveHistory(
+      calculatorType: 'nest',
+      inputData: {'open': open, 'close': close},
+      resultData: {'indication': indication, 'description': description},
+    );
+
+    if (!historySaved) {
+      return;
     }
 
     Navigator.push(

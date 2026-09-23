@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../../models/history_model.dart';
+import '../../viewmodels/history_viewmodel.dart';
 
 class PhysicalGoldHistoryDetail extends StatelessWidget {
   final HistoryModel history;
@@ -329,8 +332,60 @@ class PhysicalGoldHistoryDetail extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Fitur hapus akan disambungkan ke database nanti.
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text('Hapus Riwayat?'),
+                          content: const Text(
+                            'Riwayat perhitungan ini akan dihapus secara permanen.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, false);
+                              },
+                              child: const Text(
+                                'Batal',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, true);
+                              },
+                              child: const Text(
+                                'Hapus',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (confirm != true) {
+                      return;
+                    }
+
+                    final deleted = await context
+                        .read<HistoryViewModel>()
+                        .deleteHistory(history.id);
+
+                    if (!context.mounted) {
+                      return;
+                    }
+
+                    if (deleted) {
+                      Navigator.pop(context);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Riwayat berhasil dihapus.'),
+                        ),
+                      );
+                    }
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
