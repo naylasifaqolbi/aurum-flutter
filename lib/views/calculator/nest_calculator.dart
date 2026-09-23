@@ -254,7 +254,7 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
                         Icon(Icons.calculate_outlined, size: 21),
                         SizedBox(width: 10),
                         Text(
-                          'Lihat Indikator',
+                          'Hitung',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

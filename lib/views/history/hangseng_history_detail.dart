@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:printing/printing.dart';
 
 import '../../models/history_model.dart';
+import '../../services/pdf_service.dart';
 import '../../viewmodels/history_viewmodel.dart';
 
 class HangsengHistoryDetail extends StatelessWidget {
@@ -215,8 +217,17 @@ class HangsengHistoryDetail extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Fitur download akan disambungkan nanti.
+                  onPressed: () async {
+                    final pdfService = PdfService();
+
+                    final pdfBytes = await pdfService.generateHangSengPdf(
+                      history,
+                    );
+
+                    await Printing.sharePdf(
+                      bytes: pdfBytes,
+                      filename: 'hasil_pivot_hang_seng.pdf',
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: orangeColor,

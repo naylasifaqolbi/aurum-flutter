@@ -1,11 +1,8 @@
-import 'dart:io';
-import 'dart:typed_data';
-
-import 'package:external_path/external_path.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+
+import '../../models/history_model.dart';
+import '../../services/pdf_service.dart';
 
 class PivotResult extends StatelessWidget {
   // ============================================================
@@ -1130,678 +1127,65 @@ class PivotResult extends StatelessWidget {
   }
 
   // ============================================================
-  // DOWNLOAD PDF
+  // DOWNLOAD PDF HASIL PERHITUNGAN
   // ============================================================
 
   Future<void> _downloadResult(BuildContext context) async {
     try {
-      final Uint8List pdfBytes = await _generatePdf();
+      final history = HistoryModel(
+        id: '',
+        userId: '',
+        calculatorType: pivotType == 'Hang Seng'
+            ? 'pivot_hangseng'
+            : 'pivot_gold',
+        createdAt: DateTime.now(),
+        inputData: {'open': open, 'high': high, 'low': low, 'close': close},
+        resultData: {
+          'pp': pp,
+          'r1': r1,
+          'r2': r2,
+          'r3': r3,
+          'r4': r4,
+          's1': s1,
+          's2': s2,
+          's3': s3,
+          's4': s4,
+          'midpoint_r4_r3': midpointR4R3,
+          'midpoint_r3_r2': midpointR3R2,
+          'midpoint_r2_r1': midpointR2R1,
+          'midpoint_pp_r1': midpointPPR1,
+          'midpoint_pp_s1': midpointPPS1,
+          'midpoint_s1_s2': midpointS1S2,
+          'midpoint_s2_s3': midpointS2S3,
+          'midpoint_s3_s4': midpointS3S4,
+          'indication': indication,
+        },
+      );
 
-      String downloadPath;
+      final pdfService = PdfService();
 
-      if (Platform.isAndroid) {
-        downloadPath = await ExternalPath.getExternalStoragePublicDirectory(
-          ExternalPath.DIRECTORY_DOWNLOAD,
-        );
-      } else {
-        downloadPath = '.';
-      }
+      final pdfBytes = pivotType == 'Hang Seng'
+          ? await pdfService.generateHangSengPdf(history)
+          : await pdfService.generatePivotGoldPdf(history);
 
-      final String fileName =
-          'hasil_pivot_${pivotType.toLowerCase().replaceAll(' ', '_')}_'
-          '${DateTime.now().millisecondsSinceEpoch}.pdf';
-
-      final String filePath = '$downloadPath/$fileName';
-
-      final File file = File(filePath);
-
-      await file.writeAsBytes(pdfBytes);
-
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Hasil Pivot Point berhasil diunduh ke folder Download.',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-          backgroundColor: darkBrown,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 3),
-        ),
+      await Printing.sharePdf(
+        bytes: pdfBytes,
+        filename: pivotType == 'Hang Seng'
+            ? 'hasil_pivot_hang_seng.pdf'
+            : 'hasil_pivot_emas.pdf',
       );
     } catch (e) {
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (!context.mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Gagal mengunduh hasil PDF: $e',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-          backgroundColor: redColor,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          duration: const Duration(seconds: 4),
+          content: Text('Gagal membuat PDF: $e'),
+          backgroundColor: Colors.red,
         ),
       );
     }
-  }
-
-  // ============================================================
-  // GENERATE PDF
-  // ============================================================
-
-  Future<Uint8List> _generatePdf() async {
-    final pw.Document pdf = pw.Document();
-
-    final pw.MemoryImage? logoImage = await _loadLogo();
-
-    final PdfColor orangePdf = PdfColor.fromHex('#F28C28');
-    final PdfColor darkBrownPdf = PdfColor.fromHex('#3D2B1F');
-    final PdfColor greenPdf = PdfColor.fromHex('#2E8B57');
-    final PdfColor redPdf = PdfColor.fromHex('#D9534F');
-    final PdfColor greyPdf = PdfColor.fromHex('#777777');
-    final PdfColor lightOrangePdf = PdfColor.fromHex('#FFE5CC');
-    final PdfColor lightGreenPdf = PdfColor.fromHex('#E8F7EC');
-    final PdfColor lightRedPdf = PdfColor.fromHex('#FCEAEA');
-
-    final bool isHangSeng = pivotType == 'Hang Seng';
-
-    final String pdfTitle = isHangSeng
-        ? 'Hasil Pivot Hang Seng'
-        : 'Hasil Pivot Point Emas';
-
-    final String pdfDescription = isHangSeng
-        ? 'Rincian hasil perhitungan Pivot Point Hang Seng'
-        : 'Rincian hasil perhitungan Pivot Point Emas';
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(28),
-
-        header: (pw.Context context) {
-          return pw.Column(
-            children: [
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: pw.CrossAxisAlignment.center,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'AURUM',
-                        style: pw.TextStyle(
-                          fontSize: 24,
-                          fontWeight: pw.FontWeight.bold,
-                          color: orangePdf,
-                        ),
-                      ),
-                      pw.SizedBox(height: 3),
-                      pw.Text(
-                        pdfTitle,
-                        style: pw.TextStyle(
-                          fontSize: 13,
-                          fontWeight: pw.FontWeight.bold,
-                          color: darkBrownPdf,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  if (logoImage != null)
-                    pw.Opacity(
-                      opacity: 0.85,
-                      child: pw.Image(
-                        logoImage,
-                        width: 78,
-                        height: 55,
-                        fit: pw.BoxFit.contain,
-                      ),
-                    ),
-                ],
-              ),
-
-              pw.SizedBox(height: 8),
-
-              pw.Divider(color: PdfColor.fromHex('#E5E5E5'), thickness: 1),
-
-              pw.SizedBox(height: 4),
-            ],
-          );
-        },
-
-        footer: (pw.Context context) {
-          return pw.Column(
-            children: [
-              pw.Divider(color: PdfColor.fromHex('#E5E5E5'), thickness: 0.7),
-              pw.SizedBox(height: 5),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'AURUM - Pivot Point Calculator',
-                    style: pw.TextStyle(fontSize: 8, color: greyPdf),
-                  ),
-                  pw.Text(
-                    'Halaman ${context.pageNumber}',
-                    style: pw.TextStyle(fontSize: 8, color: greyPdf),
-                  ),
-                ],
-              ),
-            ],
-          );
-        },
-
-        build: (pw.Context context) {
-          return [
-            pw.Text(
-              pdfDescription,
-              style: pw.TextStyle(fontSize: 10, color: greyPdf),
-            ),
-
-            pw.SizedBox(height: 15),
-
-            // ==================================================
-            // DATA INPUT
-            // ==================================================
-            _buildPdfSectionTitle('DATA INPUT', darkBrownPdf),
-
-            pw.SizedBox(height: 8),
-
-            pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.all(12),
-              decoration: pw.BoxDecoration(
-                color: PdfColors.white,
-                border: pw.Border.all(
-                  color: PdfColor.fromHex('#E5E5E5'),
-                  width: 0.8,
-                ),
-                borderRadius: pw.BorderRadius.circular(8),
-              ),
-              child: pw.Column(
-                children: [
-                  _buildPdfDataRow('Open', _formatNumber(open), darkBrownPdf),
-                  _buildPdfDivider(),
-                  _buildPdfDataRow('High', _formatNumber(high), darkBrownPdf),
-                  _buildPdfDivider(),
-                  _buildPdfDataRow('Low', _formatNumber(low), darkBrownPdf),
-                  _buildPdfDivider(),
-                  _buildPdfDataRow('Close', _formatNumber(close), darkBrownPdf),
-                ],
-              ),
-            ),
-
-            pw.SizedBox(height: 16),
-
-            // ==================================================
-            // PIVOT POINT UTAMA
-            // ==================================================
-            _buildPdfSectionTitle('PIVOT POINT UTAMA', orangePdf),
-
-            pw.SizedBox(height: 8),
-
-            pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.all(14),
-              decoration: pw.BoxDecoration(
-                color: PdfColor.fromHex('#FFEDD9'),
-                border: pw.Border.all(color: orangePdf, width: 1),
-                borderRadius: pw.BorderRadius.circular(8),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    'Pivot Point (PP) $pivotType',
-                    style: pw.TextStyle(
-                      fontSize: 13,
-                      fontWeight: pw.FontWeight.bold,
-                      color: darkBrownPdf,
-                    ),
-                  ),
-                  pw.SizedBox(height: 6),
-                  pw.Text(
-                    'PP = (High + Low + Close) / 3',
-                    style: pw.TextStyle(fontSize: 9, color: greyPdf),
-                  ),
-                  pw.SizedBox(height: 5),
-                  pw.Text(
-                    _formatNumber(pp),
-                    style: pw.TextStyle(
-                      fontSize: 22,
-                      fontWeight: pw.FontWeight.bold,
-                      color: orangePdf,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            pw.SizedBox(height: 16),
-
-            // ==================================================
-            // RESISTANCE
-            // ==================================================
-            _buildPdfSectionTitle('RESISTANCE (ATAS)', greenPdf),
-
-            pw.SizedBox(height: 8),
-
-            _buildPdfLevelRow(
-              level: 'R4',
-              value: r4,
-              formula: 'PP + (High - Low) × 3',
-              midpointLabel: 'Midpoint R4-R3',
-              midpoint: midpointR4R3,
-              valueColor: greenPdf,
-              backgroundColor: lightGreenPdf,
-            ),
-
-            pw.SizedBox(height: 7),
-
-            _buildPdfLevelRow(
-              level: 'R3',
-              value: r3,
-              formula: 'PP + (High - Low) × 2',
-              midpointLabel: 'Midpoint R3-R2',
-              midpoint: midpointR3R2,
-              valueColor: greenPdf,
-              backgroundColor: lightGreenPdf,
-            ),
-
-            pw.SizedBox(height: 7),
-
-            _buildPdfLevelRow(
-              level: 'R2',
-              value: r2,
-              formula: 'PP + (High - Low)',
-              midpointLabel: 'Midpoint R2-R1',
-              midpoint: midpointR2R1,
-              valueColor: greenPdf,
-              backgroundColor: lightGreenPdf,
-            ),
-
-            pw.SizedBox(height: 7),
-
-            _buildPdfLevelRow(
-              level: 'R1',
-              value: r1,
-              formula: '2 × PP - Low',
-              midpointLabel: 'Midpoint PP-R1',
-              midpoint: midpointPPR1,
-              valueColor: greenPdf,
-              backgroundColor: lightGreenPdf,
-            ),
-
-            pw.SizedBox(height: 16),
-
-            // ==================================================
-            // SUPPORT
-            // ==================================================
-            _buildPdfSectionTitle('SUPPORT (BAWAH)', redPdf),
-
-            pw.SizedBox(height: 8),
-
-            _buildPdfLevelRow(
-              level: 'S1',
-              value: s1,
-              formula: '2 × PP - High',
-              midpointLabel: 'Midpoint PP-S1',
-              midpoint: midpointPPS1,
-              valueColor: redPdf,
-              backgroundColor: lightRedPdf,
-            ),
-
-            pw.SizedBox(height: 7),
-
-            _buildPdfLevelRow(
-              level: 'S2',
-              value: s2,
-              formula: 'PP - (High - Low)',
-              midpointLabel: 'Midpoint S1-S2',
-              midpoint: midpointS1S2,
-              valueColor: redPdf,
-              backgroundColor: lightRedPdf,
-            ),
-
-            pw.SizedBox(height: 7),
-
-            _buildPdfLevelRow(
-              level: 'S3',
-              value: s3,
-              formula: 'PP - (High - Low) × 2',
-              midpointLabel: 'Midpoint S2-S3',
-              midpoint: midpointS2S3,
-              valueColor: redPdf,
-              backgroundColor: lightRedPdf,
-            ),
-
-            pw.SizedBox(height: 7),
-
-            _buildPdfLevelRow(
-              level: 'S4',
-              value: s4,
-              formula: 'PP - (High - Low) × 3',
-              midpointLabel: 'Midpoint S3-S4',
-              midpoint: midpointS3S4,
-              valueColor: redPdf,
-              backgroundColor: lightRedPdf,
-            ),
-
-            pw.SizedBox(height: 16),
-
-            // ==================================================
-            // INDIKASI
-            // ==================================================
-            _buildPdfSectionTitle('INDIKASI', darkBrownPdf),
-
-            pw.SizedBox(height: 8),
-
-            _buildPdfIndicationCard(
-              isBuy: indication == 'BUY',
-              indicationValue: indication,
-              indicationColor: indication == 'BUY' ? greenPdf : redPdf,
-              indicationBackground: indication == 'BUY'
-                  ? lightGreenPdf
-                  : lightRedPdf,
-              indicationDescription: isHangSeng
-                  ? (indication == 'BUY'
-                        ? 'Open berada di atas Pivot Point Hang Seng.'
-                        : 'Open berada di bawah Pivot Point Hang Seng.')
-                  : (indication == 'BUY'
-                        ? 'Open berada di bawah Pivot Point Emas.'
-                        : 'Open berada di atas Pivot Point Emas.'),
-              greyColor: greyPdf,
-              darkBrownColor: darkBrownPdf,
-            ),
-          ];
-        },
-      ),
-    );
-
-    return pdf.save();
-  }
-
-  // ============================================================
-  // LOAD LOGO
-  // ============================================================
-
-  Future<pw.MemoryImage?> _loadLogo() async {
-    try {
-      final ByteData data = await rootBundle.load('assets/images/ewf-logo.png');
-
-      return pw.MemoryImage(data.buffer.asUint8List());
-    } catch (_) {
-      return null;
-    }
-  }
-
-  // ============================================================
-  // PDF SECTION TITLE
-  // ============================================================
-
-  pw.Widget _buildPdfSectionTitle(String title, PdfColor color) {
-    return pw.Text(
-      title,
-      style: pw.TextStyle(
-        fontSize: 11,
-        fontWeight: pw.FontWeight.bold,
-        color: color,
-        letterSpacing: 0.5,
-      ),
-    );
-  }
-
-  // ============================================================
-  // PDF DATA ROW
-  // ============================================================
-
-  pw.Widget _buildPdfDataRow(String title, String value, PdfColor color) {
-    return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text(
-          title,
-          style: pw.TextStyle(fontSize: 10, color: PdfColor.fromHex('#777777')),
-        ),
-        pw.Text(
-          value,
-          style: pw.TextStyle(
-            fontSize: 10,
-            fontWeight: pw.FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ============================================================
-  // PDF DIVIDER
-  // ============================================================
-
-  pw.Widget _buildPdfDivider() {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 6),
-      child: pw.Divider(color: PdfColor.fromHex('#EEEEEE'), thickness: 0.6),
-    );
-  }
-
-  // ============================================================
-  // PDF LEVEL ROW
-  // ============================================================
-
-  pw.Widget _buildPdfLevelRow({
-    required String level,
-    required double value,
-    required String formula,
-    required String midpointLabel,
-    required double midpoint,
-    required PdfColor valueColor,
-    required PdfColor backgroundColor,
-  }) {
-    return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.all(10),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        border: pw.Border.all(color: PdfColor.fromHex('#E5E5E5'), width: 0.7),
-        borderRadius: pw.BorderRadius.circular(7),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Container(
-                width: 34,
-                height: 28,
-                alignment: pw.Alignment.center,
-                decoration: pw.BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: pw.BorderRadius.circular(5),
-                ),
-                child: pw.Text(
-                  level,
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                    color: valueColor,
-                  ),
-                ),
-              ),
-
-              pw.SizedBox(width: 9),
-
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      level,
-                      style: pw.TextStyle(
-                        fontSize: 8,
-                        fontWeight: pw.FontWeight.bold,
-                        color: valueColor,
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      _formatNumber(value),
-                      style: pw.TextStyle(
-                        fontSize: 14,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColor.fromHex('#3D2B1F'),
-                      ),
-                    ),
-                    pw.SizedBox(height: 3),
-                    pw.Text(
-                      formula,
-                      style: pw.TextStyle(
-                        fontSize: 8,
-                        color: PdfColor.fromHex('#777777'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          pw.SizedBox(height: 7),
-
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: pw.BoxDecoration(
-              color: backgroundColor,
-              borderRadius: pw.BorderRadius.circular(5),
-            ),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
-                  midpointLabel,
-                  style: pw.TextStyle(fontSize: 8, color: valueColor),
-                ),
-                pw.Text(
-                  _formatNumber(midpoint),
-                  style: pw.TextStyle(
-                    fontSize: 9,
-                    fontWeight: pw.FontWeight.bold,
-                    color: valueColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // PDF INDIKASI CARD
-  // ============================================================
-
-  pw.Widget _buildPdfIndicationCard({
-    required bool isBuy,
-    required String indicationValue,
-    required PdfColor indicationColor,
-    required PdfColor indicationBackground,
-    required String indicationDescription,
-    required PdfColor greyColor,
-    required PdfColor darkBrownColor,
-  }) {
-    return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.all(12),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.white,
-        border: pw.Border.all(color: indicationColor, width: 0.8),
-        borderRadius: pw.BorderRadius.circular(8),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.all(10),
-            decoration: pw.BoxDecoration(
-              color: indicationBackground,
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Row(
-              children: [
-                pw.Container(
-                  width: 30,
-                  height: 30,
-                  alignment: pw.Alignment.center,
-                  decoration: pw.BoxDecoration(
-                    color: indicationColor,
-                    shape: pw.BoxShape.circle,
-                  ),
-                  child: pw.Text(
-                    isBuy ? '↑' : '↓',
-                    style: pw.TextStyle(
-                      fontSize: 16,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.white,
-                    ),
-                  ),
-                ),
-
-                pw.SizedBox(width: 9),
-
-                pw.Expanded(
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        indicationValue,
-                        style: pw.TextStyle(
-                          fontSize: 15,
-                          fontWeight: pw.FontWeight.bold,
-                          color: indicationColor,
-                        ),
-                      ),
-                      pw.SizedBox(height: 3),
-                      pw.Text(
-                        indicationDescription,
-                        style: pw.TextStyle(fontSize: 9, color: greyColor),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          pw.SizedBox(height: 8),
-
-          pw.Text(
-            'Open: ${_formatNumber(open)}    '
-            'Pivot Point: ${_formatNumber(pp)}',
-            style: pw.TextStyle(fontSize: 9, color: greyColor),
-          ),
-        ],
-      ),
-    );
   }
 
   // ============================================================

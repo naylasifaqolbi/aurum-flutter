@@ -30,6 +30,32 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
   final TextEditingController _hargaBeliController = TextEditingController();
   final TextEditingController _hargaJualController = TextEditingController();
 
+  // ==================================================
+  // FORMAT ANGKA RIBUAN
+  // ==================================================
+
+  final TextInputFormatter _thousandsFormatter =
+      TextInputFormatter.withFunction((oldValue, newValue) {
+        final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+
+        if (digits.isEmpty) {
+          return const TextEditingValue(
+            text: '',
+            selection: TextSelection.collapsed(offset: 0),
+          );
+        }
+
+        final formatted = digits.replaceAllMapped(
+          RegExp(r'\B(?=(\d{3})+(?!\d))'),
+          (match) => '.',
+        );
+
+        return TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      });
+
   @override
   void dispose() {
     _modalController.dispose();
@@ -57,9 +83,13 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
     // KONVERSI INPUT MENJADI DOUBLE
     // ================================================
 
-    final double modal = double.parse(_modalController.text.trim());
+    final double modal = double.parse(
+      _modalController.text.replaceAll('.', '').trim(),
+    );
 
-    final double kurs = double.parse(_kursController.text.trim());
+    final double kurs = double.parse(
+      _kursController.text.replaceAll('.', '').trim(),
+    );
 
     final double hargaBeli = double.parse(_hargaBeliController.text.trim());
 
@@ -293,6 +323,7 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
                   icon: Icons.account_balance_wallet_outlined,
                   keyboardType: TextInputType.number,
                   errorMessage: 'Modal wajib diisi',
+                  inputFormatters: [_thousandsFormatter],
                 ),
 
                 const SizedBox(height: 20),
@@ -310,6 +341,7 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
                   icon: Icons.currency_exchange_rounded,
                   keyboardType: TextInputType.number,
                   errorMessage: 'Kurs wajib diisi',
+                  inputFormatters: [_thousandsFormatter],
                 ),
 
                 const SizedBox(height: 20),
@@ -424,10 +456,12 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
     required IconData icon,
     required TextInputType keyboardType,
     required String errorMessage,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
 
       // ================================================
       // VALIDASI

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
+
+import '../../models/history_model.dart';
+import '../../services/pdf_service.dart';
 
 class NestResult extends StatelessWidget {
   final double open;
@@ -154,32 +158,94 @@ class NestResult extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 28),
+
               SizedBox(
                 width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
+                height: 48,
+                child: OutlinedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                   },
+                  icon: const Icon(Icons.refresh_rounded, size: 20),
+                  label: const Text(
+                    'Hitung Lagi',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFF28C28),
+                    side: const BorderSide(color: Color(0xFFF28C28)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    _downloadResult(context);
+                  },
+                  icon: const Icon(Icons.download_rounded, size: 20),
+                  label: const Text(
+                    'Unduh Hasil Perhitungan',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF28C28),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(9),
                     ),
-                  ),
-                  child: const Text(
-                    'Kembali ke Nest',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
+
+              const SizedBox(height: 30),
             ],
           ),
         ),
       ),
     );
+  }
+
+  // ============================================================
+  // DOWNLOAD PDF HASIL PERHITUNGAN
+  // ============================================================
+
+  Future<void> _downloadResult(BuildContext context) async {
+    try {
+      final history = HistoryModel(
+        id: '',
+        userId: '',
+        calculatorType: 'nest',
+        createdAt: DateTime.now(),
+        inputData: {'open': open, 'close': close},
+        resultData: {'indication': indication, 'description': description},
+      );
+
+      final pdfService = PdfService();
+
+      final pdfBytes = await pdfService.generateNestPdf(history);
+
+      await Printing.sharePdf(bytes: pdfBytes, filename: 'hasil_nest.pdf');
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal membuat PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildPriceRow({required String label, required double value}) {
