@@ -41,6 +41,8 @@ class HistoryViewModel extends ChangeNotifier {
         resultData: resultData,
       );
 
+      await loadHistory();
+
       return true;
     } catch (e) {
       _errorMessage = e.toString();

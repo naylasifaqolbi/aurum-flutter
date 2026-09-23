@@ -275,6 +275,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
               if (history.calculatorType == 'pivot_gold')
                 _buildPivotGoldCard(history),
+
+              if (history.calculatorType == 'pivot_hangseng')
+                _buildPivotHangSengCard(history),
+
+              if (history.calculatorType == 'nest') _buildNestCard(history),
             ],
           ],
         );
@@ -374,24 +379,42 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // ==================================================
   // PIVOT HANG SENG
   // ==================================================
-  Widget _buildPivotHangSengCard() {
+  Widget _buildPivotHangSengCard(HistoryModel history) {
+    final input = history.inputData;
+    final result = history.resultData;
+
+    final double high = (input['high'] as num).toDouble();
+    final double low = (input['low'] as num).toDouble();
+    final double close = (input['close'] as num).toDouble();
+    final double pp = (result['pp'] as num).toDouble();
+
+    final date = history.createdAt.toLocal();
+
     return _buildHistoryCard(
       type: 'PP HANG SENG',
-      date: '24 Okt 2026, 09:15',
+      date:
+          '${date.day.toString().padLeft(2, '0')} '
+          '${_getMonthName(date.month)} '
+          '${date.year}, '
+          '${date.hour.toString().padLeft(2, '0')}:'
+          '${date.minute.toString().padLeft(2, '0')}',
       icon: Icons.trending_up_rounded,
       resultLabel: 'Pivot Point Hang Seng (HSI)',
-      resultValue: '24850.00',
+      resultValue: pp.toStringAsFixed(2),
       details: [
         _DetailItem(
           label: 'High / Low / Close',
-          value: '24980 / 24720 / 24850',
+          value:
+              '${_formatNumber(high)} / '
+              '${_formatNumber(low)} / '
+              '${_formatNumber(close)}',
         ),
       ],
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const HangsengHistoryDetail(),
+            builder: (context) => HangsengHistoryDetail(history: history),
           ),
         );
       },
@@ -401,18 +424,42 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // ==================================================
   // NEST
   // ==================================================
-  Widget _buildNestCard() {
+  Widget _buildNestCard(HistoryModel history) {
+    final input = history.inputData;
+    final result = history.resultData;
+
+    final double open = (input['open'] as num).toDouble();
+    final double close = (input['close'] as num).toDouble();
+
+    final String indication = result['indication'].toString();
+
+    final date = history.createdAt.toLocal();
+
     return _buildHistoryCard(
       type: 'NEST',
-      date: '24 Okt 2026, 09:15',
+      date:
+          '${date.day.toString().padLeft(2, '0')} '
+          '${_getMonthName(date.month)} '
+          '${date.year}, '
+          '${date.hour.toString().padLeft(2, '0')}:'
+          '${date.minute.toString().padLeft(2, '0')}',
       icon: Icons.account_tree_outlined,
-      resultLabel: 'Nest',
-      resultValue: 'BUY',
-      details: [_DetailItem(label: 'Open / Close', value: '2650 / 2680')],
+      resultLabel: 'Indikator Nest',
+      resultValue: indication,
+      details: [
+        _DetailItem(
+          label: 'Open / Close',
+          value:
+              '${_formatNumber(open)} / '
+              '${_formatNumber(close)}',
+        ),
+      ],
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const NestHistoryDetail()),
+          MaterialPageRoute(
+            builder: (context) => NestHistoryDetail(history: history),
+          ),
         );
       },
     );

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../models/history_model.dart';
+import '../../viewmodels/history_viewmodel.dart';
 
 class NestHistoryDetail extends StatelessWidget {
-  const NestHistoryDetail({super.key});
+  final HistoryModel history;
+
+  const NestHistoryDetail({super.key, required this.history});
 
   // ============================================================
   // COLOR
@@ -16,6 +22,17 @@ class NestHistoryDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final input = history.inputData;
+    final result = history.resultData;
+
+    final double open = (input['open'] as num).toDouble();
+    final double close = (input['close'] as num).toDouble();
+
+    final String indication = result['indication'].toString();
+    final String description = result['description'].toString();
+
+    final date = history.createdAt.toLocal();
+
     return Scaffold(
       backgroundColor: backgroundColor,
 
@@ -62,10 +79,8 @@ class NestHistoryDetail extends StatelessWidget {
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
-
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
               // ==================================================
               // DETAIL HEADER
@@ -95,7 +110,6 @@ class NestHistoryDetail extends StatelessWidget {
                       borderRadius: BorderRadius.circular(7),
                       border: Border.all(color: orangeColor, width: 1),
                     ),
-
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -123,9 +137,13 @@ class NestHistoryDetail extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              const Text(
-                '24 Okt 2026, 10:15 WIB',
-                style: TextStyle(fontSize: 13, color: Color(0xFF667085)),
+              Text(
+                '${date.day.toString().padLeft(2, '0')} '
+                '${_getMonthName(date.month)} '
+                '${date.year}, '
+                '${date.hour.toString().padLeft(2, '0')}:'
+                '${date.minute.toString().padLeft(2, '0')} WIB',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF667085)),
               ),
 
               const SizedBox(height: 16),
@@ -133,14 +151,21 @@ class NestHistoryDetail extends StatelessWidget {
               // ==================================================
               // SUMMARY CARD
               // ==================================================
-              _buildSummaryCard(),
+              _buildSummaryCard(
+                indication: indication,
+                open: open,
+                close: close,
+              ),
 
               const SizedBox(height: 18),
 
               // ==================================================
               // ANALYSIS CARD
               // ==================================================
-              _buildAnalysisCard(),
+              _buildAnalysisCard(
+                indication: indication,
+                description: description,
+              ),
 
               const SizedBox(height: 20),
 
@@ -179,8 +204,60 @@ class NestHistoryDetail extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Fitur hapus akan disambungkan ke database nanti.
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text('Hapus Riwayat?'),
+                          content: const Text(
+                            'Riwayat perhitungan ini akan dihapus secara permanen.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, false);
+                              },
+                              child: const Text(
+                                'Batal',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context, true);
+                              },
+                              child: const Text(
+                                'Hapus',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (confirm != true) {
+                      return;
+                    }
+
+                    final deleted = await context
+                        .read<HistoryViewModel>()
+                        .deleteHistory(history.id);
+
+                    if (!context.mounted) {
+                      return;
+                    }
+
+                    if (deleted) {
+                      Navigator.pop(context);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Riwayat berhasil dihapus.'),
+                        ),
+                      );
+                    }
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
@@ -207,21 +284,36 @@ class NestHistoryDetail extends StatelessWidget {
   // SUMMARY CARD
   // ============================================================
 
-  Widget _buildSummaryCard() {
+  Widget _buildSummaryCard({
+    required String indication,
+    required double open,
+    required double close,
+  }) {
+    final bool isBuy = indication == 'BUY';
+    final bool isSell = indication == 'SELL';
+
+    final Color indicatorColor = isBuy
+        ? greenColor
+        : isSell
+        ? redColor
+        : const Color(0xFF888888);
+
+    final IconData indicatorIcon = isBuy
+        ? Icons.trending_up_rounded
+        : isSell
+        ? Icons.trending_down_rounded
+        : Icons.remove_rounded;
+
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
-
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(17),
         border: Border.all(color: const Color(0xFFE1E7EF), width: 1),
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           // ==================================================
           // TITLE
@@ -243,25 +335,23 @@ class NestHistoryDetail extends StatelessWidget {
           Center(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-
               decoration: BoxDecoration(
-                color: greenColor.withOpacity(0.10),
+                color: indicatorColor.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(20),
               ),
-
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.trending_up_rounded, color: greenColor, size: 20),
+                  Icon(indicatorIcon, color: indicatorColor, size: 20),
 
-                  SizedBox(width: 7),
+                  const SizedBox(width: 7),
 
                   Text(
-                    'BUY',
+                    indication,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: greenColor,
+                      color: indicatorColor,
                     ),
                   ),
                 ],
@@ -295,13 +385,19 @@ class NestHistoryDetail extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _buildInputBox(label: 'Open', value: '2650'),
+                child: _buildInputBox(
+                  label: 'Open',
+                  value: _formatNumber(open),
+                ),
               ),
 
               const SizedBox(width: 8),
 
               Expanded(
-                child: _buildInputBox(label: 'Close', value: '2680'),
+                child: _buildInputBox(
+                  label: 'Close',
+                  value: _formatNumber(close),
+                ),
               ),
             ],
           ),
@@ -317,16 +413,13 @@ class NestHistoryDetail extends StatelessWidget {
   Widget _buildInputBox({required String label, required String value}) {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
-
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFDDE2E8)),
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           Text(
             label,
@@ -352,21 +445,29 @@ class NestHistoryDetail extends StatelessWidget {
   // ANALYSIS CARD
   // ============================================================
 
-  Widget _buildAnalysisCard() {
+  Widget _buildAnalysisCard({
+    required String indication,
+    required String description,
+  }) {
+    final bool isBuy = indication == 'BUY';
+    final bool isSell = indication == 'SELL';
+
+    final Color indicatorColor = isBuy
+        ? greenColor
+        : isSell
+        ? redColor
+        : const Color(0xFF888888);
+
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
-
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(17),
         border: Border.all(color: const Color(0xFFE1E7EF), width: 1),
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           const Text(
             'Analisis',
@@ -382,16 +483,13 @@ class NestHistoryDetail extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-
             decoration: BoxDecoration(
               color: const Color(0xFFF7F7F7),
               borderRadius: BorderRadius.circular(10),
             ),
-
-            child: const Text(
-              'Harga Close lebih tinggi daripada Harga Open, '
-              'sehingga indikator Nest menunjukkan kondisi BUY.',
-              style: TextStyle(
+            child: Text(
+              description,
+              style: const TextStyle(
                 fontSize: 12,
                 height: 1.5,
                 color: Color(0xFF667085),
@@ -415,18 +513,16 @@ class NestHistoryDetail extends StatelessWidget {
                   horizontal: 10,
                   vertical: 5,
                 ),
-
                 decoration: BoxDecoration(
-                  color: greenColor.withOpacity(0.10),
+                  color: indicatorColor.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(15),
                 ),
-
-                child: const Text(
-                  'BUY',
+                child: Text(
+                  indication,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: greenColor,
+                    color: indicatorColor,
                   ),
                 ),
               ),
@@ -435,5 +531,38 @@ class NestHistoryDetail extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // ============================================================
+  // FORMAT NUMBER
+  // ============================================================
+
+  String _formatNumber(double value) {
+    return value
+        .toStringAsFixed(0)
+        .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => '.');
+  }
+
+  // ============================================================
+  // MONTH NAME
+  // ============================================================
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+
+    return months[month - 1];
   }
 }
