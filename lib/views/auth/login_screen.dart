@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     // EMAIL / USERNAME
                     // ==========================================
                     const Text(
-                      'Email / Username',
+                      'Email',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -197,14 +197,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Email / Username wajib diisi';
+                          return 'Email wajib diisi';
                         }
 
                         return null;
                       },
 
                       decoration: InputDecoration(
-                        hintText: 'Masukkan email atau username',
+                        hintText: 'Masukkan email anda',
 
                         hintStyle: const TextStyle(
                           color: Color(0xFFAAAAAA),

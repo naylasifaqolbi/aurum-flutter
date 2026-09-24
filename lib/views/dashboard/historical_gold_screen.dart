@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../services/historical_api_service.dart';
 
@@ -507,16 +508,42 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
       backgroundColor: backgroundColor,
 
       appBar: AppBar(
-        backgroundColor: orangeColor,
-
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.white,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
+
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
+        ),
+
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: darkBrown,
+            size: 25,
+          ),
+        ),
 
         title: const Text(
           'Historical Data Emas',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: orangeColor,
+          ),
         ),
-
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
 
       body: SafeArea(
@@ -539,7 +566,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
                 // ==================================================
                 _buildHeader(),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 1),
 
                 // ==================================================
                 // TITLE
@@ -630,70 +657,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
   // ============================================================
 
   Widget _buildHeader() {
-    return Row(
-      children: [
-        // ========================================================
-        // LOGO
-        // ========================================================
-        Image.asset(
-          'assets/images/logo.png',
-          width: 45,
-          height: 45,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              width: 45,
-              height: 45,
-              decoration: BoxDecoration(
-                color: orangeColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.auto_graph_rounded, color: Colors.white),
-            );
-          },
-        ),
-
-        const SizedBox(width: 12),
-
-        // ========================================================
-        // AURUM
-        // ========================================================
-        const Expanded(
-          child: Text(
-            'AURUM',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: orangeColor,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ),
-
-        // ========================================================
-        // NOTIFICATION
-        // ========================================================
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 8,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: orangeColor,
-            ),
-          ),
-        ),
-      ],
-    );
+    return Row(children: [const SizedBox(width: 12)]);
   }
 
   // ============================================================
