@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AccountSecurityScreen extends StatefulWidget {
   const AccountSecurityScreen({super.key});
@@ -11,6 +12,13 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   bool _showCurrentPassword = false;
   bool _showNewPassword = false;
   bool _showConfirmPassword = false;
+  bool _isLoading = false;
+
+  bool get _hasMinLength => _passwordController.text.length >= 6;
+
+  bool get _hasLetter => RegExp(r'[A-Za-z]').hasMatch(_passwordController.text);
+
+  bool get _hasNumber => RegExp(r'\d').hasMatch(_passwordController.text);
 
   final TextEditingController _currentPasswordController =
       TextEditingController();
@@ -28,7 +36,11 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     super.dispose();
   }
 
-  void _ubahPassword() {
+  Future<void> _ubahPassword() async {
+    // ==========================================
+    // VALIDASI FIELD WAJIB
+    // ==========================================
+
     if (_currentPasswordController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty ||
         _confirmPasswordController.text.trim().isEmpty) {
@@ -39,6 +51,38 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
       return;
     }
 
+    // ==========================================
+    // VALIDASI PASSWORD BARU
+    // ==========================================
+
+    if (!_hasMinLength) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password baru minimal 6 karakter.')),
+      );
+
+      return;
+    }
+
+    if (!_hasLetter) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password baru harus mengandung huruf.')),
+      );
+
+      return;
+    }
+
+    if (!_hasNumber) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password baru harus mengandung angka.')),
+      );
+
+      return;
+    }
+
+    // ==========================================
+    // VALIDASI KONFIRMASI PASSWORD
+    // ==========================================
+
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Konfirmasi password tidak sesuai.')),
@@ -47,9 +91,70 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Password berhasil diperbarui.')),
-    );
+    // ==========================================
+    // UPDATE PASSWORD SUPABASE
+    // ==========================================
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+
+      if (user == null || user.email == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sesi login tidak ditemukan. Silakan login kembali.'),
+          ),
+        );
+
+        return;
+      }
+
+      // ==========================================
+      // SIMPAN PASSWORD BARU
+      // ==========================================
+
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(
+          password: _passwordController.text,
+          currentPassword: _currentPasswordController.text,
+        ),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password berhasil diperbarui.')),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+    } on AuthException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Terjadi kesalahan. Silakan coba lagi.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -208,6 +313,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                       controller: _passwordController,
                       hintText: 'Masukkan password baru',
                       obscureText: !_showNewPassword,
+                      onChanged: (_) {
+                        setState(() {});
+                      },
                       onToggle: () {
                         setState(() {
                           _showNewPassword = !_showNewPassword;
@@ -255,21 +363,17 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               const SizedBox(height: 8),
 
               _buildRequirement(
-                icon: Icons.check_rounded,
-                iconColor: Colors.green,
-                backgroundColor: const Color(0xFFE5F7EF),
-                text: 'Minimal 8 karakter',
+                isValid: _hasMinLength,
+                text: 'Minimal 6 karakter',
               ),
 
               const SizedBox(height: 7),
 
-              _buildRequirement(
-                icon: Icons.circle,
-                iconColor: Color(0xFFF28C28),
-                backgroundColor: Color(0xFFFFF3E7),
-                text: 'Mengandung huruf dan angka',
-              ),
+              _buildRequirement(isValid: _hasLetter, text: 'Mengandung huruf'),
 
+              const SizedBox(height: 7),
+
+              _buildRequirement(isValid: _hasNumber, text: 'Mengandung angka'),
               const SizedBox(height: 46),
 
               // ==========================================
@@ -278,9 +382,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 52,
-
                 child: ElevatedButton(
-                  onPressed: _ubahPassword,
+                  onPressed: _isLoading ? null : _ubahPassword,
 
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF28C28),
@@ -292,10 +395,22 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                     ),
                   ),
 
-                  child: const Text(
-                    'Simpan Password',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Simpan Password',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
 
@@ -331,10 +446,12 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     required String hintText,
     required bool obscureText,
     required VoidCallback onToggle,
+    ValueChanged<String>? onChanged,
   }) {
     return TextField(
       controller: controller,
       obscureText: obscureText,
+      onChanged: onChanged,
 
       decoration: InputDecoration(
         hintText: hintText,
@@ -386,31 +503,31 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   // PASSWORD REQUIREMENT
   // ==================================================
 
-  Widget _buildRequirement({
-    required IconData icon,
-    required Color iconColor,
-    required Color backgroundColor,
-    required String text,
-  }) {
+  Widget _buildRequirement({required bool isValid, required String text}) {
     return Row(
       children: [
         Container(
           width: 16,
           height: 16,
-
           decoration: BoxDecoration(
-            color: backgroundColor,
+            color: isValid ? const Color(0xFFE5F7EF) : const Color(0xFFFFF3E7),
             shape: BoxShape.circle,
           ),
-
-          child: Icon(icon, size: 10, color: iconColor),
+          child: Icon(
+            isValid ? Icons.check_rounded : Icons.circle,
+            size: 10,
+            color: isValid ? Colors.green : const Color(0xFFF28C28),
+          ),
         ),
 
         const SizedBox(width: 8),
 
         Text(
           text,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF777777)),
+          style: TextStyle(
+            fontSize: 13,
+            color: isValid ? const Color(0xFF555555) : const Color(0xFF777777),
+          ),
         ),
       ],
     );
