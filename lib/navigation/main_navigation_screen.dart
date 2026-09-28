@@ -99,6 +99,33 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   // ==========================================================
+  // FLOATING LOGO KEPOMPONG
+  // ==========================================================
+
+  Widget _buildFloatingLogo() {
+    return Container(
+      width: 58,
+      height: 58,
+      padding: const EdgeInsets.all(7),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Image.asset(
+        'assets/images/kepompong-logo.png.jpeg',
+        fit: BoxFit.contain,
+      ),
+    );
+  }
+
+  // ==========================================================
   // BUILD
   // ==========================================================
 
@@ -110,7 +137,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       // ========================================================
       // CONTENT
       // ========================================================
-      body: IndexedStack(index: _selectedIndex, children: _pages),
+      //
+      // IndexedStack tetap digunakan seperti sebelumnya.
+      // Stack hanya ditambahkan agar logo dapat floating
+      // di atas area BottomNavigationBar.
+      //
+      body: Stack(
+        children: [
+          // ====================================================
+          // CONTENT LAMA
+          // ====================================================
+          IndexedStack(index: _selectedIndex, children: _pages),
+
+          // ====================================================
+          // FLOATING LOGO KEPOMPONG
+          // ====================================================
+          Positioned(right: 18, bottom: 8, child: _buildFloatingLogo()),
+        ],
+      ),
 
       // ========================================================
       // SATU-SATUNYA BOTTOM NAVIGATION BAR
