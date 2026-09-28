@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/historical_api_service.dart';
 import 'physical_gold_formula_screen.dart';
 import 'pivot_formula_screen.dart';
+import 'nest_formula_screen.dart';
 import 'historical_gold_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -197,6 +198,7 @@ class DashboardScreenState extends State<DashboardScreen> {
         elevation: 0,
         toolbarHeight: 64,
         titleSpacing: 20,
+
         // ==================================================
         // HEADER
         // ==================================================
@@ -314,8 +316,7 @@ class DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 8),
 
               const Text(
-                'Dua metode perhitungan utama yang '
-                'tersedia di AURUM.',
+                'Tiga metode perhitungan yang tersedia di AURUM.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.black54,
@@ -333,9 +334,8 @@ class DashboardScreenState extends State<DashboardScreen> {
                 icon: Icons.monetization_on_outlined,
                 title: 'Emas Fisik',
                 description:
-                    'Hitung keuntungan transaksi '
-                    'emas berdasarkan data yang '
-                    'kamu masukkan.',
+                    'Hitung keuntungan transaksi emas '
+                    'berdasarkan data yang kamu masukkan.',
                 onFormulaTap: () {
                   Navigator.push(
                     context,
@@ -356,14 +356,37 @@ class DashboardScreenState extends State<DashboardScreen> {
                 icon: Icons.show_chart_rounded,
                 title: 'Pivot Point',
                 description:
-                    'Tentukan indikasi BUY atau '
-                    'SELL berdasarkan nilai Pivot '
-                    'Point.',
+                    'Tentukan indikasi BUY atau SELL '
+                    'berdasarkan nilai Pivot Point untuk '
+                    'emas dan Hangseng.',
                 onFormulaTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const PivotFormulaScreen(),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // ==================================================
+              // NEST
+              // ==================================================
+              _buildCalculationCard(
+                context: context,
+                icon: Icons.swap_vert_rounded,
+                title: 'NEST',
+                description:
+                    'Tentukan indikasi BUY atau SELL '
+                    'berdasarkan perbandingan harga Open '
+                    'dan Close.',
+                onFormulaTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NestFormulaScreen(),
                     ),
                   );
                 },
@@ -382,10 +405,6 @@ class DashboardScreenState extends State<DashboardScreen> {
   // ============================================================
 
   Widget _buildGoldPriceCard(BuildContext context) {
-    // ==========================================================
-    // AMBIL DATA TERBARU DARI HISTORICAL API SERVICE
-    // ==========================================================
-
     final String latestDate = _latestGoldData['date'] ?? '-';
 
     final String latestOpen = _latestGoldData['open'] ?? '-';
@@ -466,7 +485,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                       _isLoadingGoldData
                           ? 'Memuat data...'
                           : _formatLatestDate(latestDate),
-
                       style: const TextStyle(
                         fontSize: 13,
                         color: Colors.black54,
@@ -619,10 +637,6 @@ class DashboardScreenState extends State<DashboardScreen> {
 
       return '$day/$month/$year';
     } catch (_) {
-      // ========================================================
-      // JIKA FORMAT TANGGAL SUDAH DALAM BENTUK STRING
-      // ========================================================
-
       if (date.length >= 10) {
         return date.substring(0, 10);
       }
@@ -642,7 +656,6 @@ class DashboardScreenState extends State<DashboardScreen> {
       children: [
         Text(
           label,
-
           style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,
@@ -655,7 +668,6 @@ class DashboardScreenState extends State<DashboardScreen> {
 
         Text(
           value,
-
           style: const TextStyle(
             fontSize: 19,
             fontWeight: FontWeight.bold,
@@ -701,7 +713,6 @@ class DashboardScreenState extends State<DashboardScreen> {
           // ======================================================
           const Text(
             'Kelola dan Analisis Emasmu',
-
             style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.bold,
@@ -714,7 +725,6 @@ class DashboardScreenState extends State<DashboardScreen> {
 
           const Text(
             'dengan Lebih Mudah',
-
             style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.bold,
@@ -730,7 +740,6 @@ class DashboardScreenState extends State<DashboardScreen> {
             'nilai dan keuntungan emas fisik serta '
             'menganalisis pergerakan harga '
             'menggunakan Pivot Point.',
-
             style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.6),
           ),
 
@@ -762,7 +771,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                 children: const [
                   Text(
                     'Mulai Menghitung Sekarang',
-
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
 
@@ -792,9 +800,6 @@ class DashboardScreenState extends State<DashboardScreen> {
     return GestureDetector(
       onTap: onFormulaTap,
 
-      // ==========================================================
-      // CALLBACK LIHAT RUMUS
-      // ==========================================================
       child: Container(
         width: double.infinity,
 
@@ -842,7 +847,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                 Expanded(
                   child: Text(
                     title,
-
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -860,7 +864,6 @@ class DashboardScreenState extends State<DashboardScreen> {
             // ======================================================
             Text(
               description,
-
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black54,
@@ -883,7 +886,6 @@ class DashboardScreenState extends State<DashboardScreen> {
 
                 Text(
                   'Lihat Rumus',
-
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,

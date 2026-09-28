@@ -21,6 +21,9 @@ class PivotFormulaScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: backgroundColor,
 
+      // ========================================================
+      // APP BAR
+      // ========================================================
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -30,6 +33,7 @@ class PivotFormulaScreen extends StatelessWidget {
 
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
+
           child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
         ),
 
@@ -37,6 +41,7 @@ class PivotFormulaScreen extends StatelessWidget {
           onPressed: () {
             Navigator.pop(context);
           },
+
           icon: const Icon(
             Icons.arrow_back_rounded,
             color: Color(0xFF3D2B1F),
@@ -54,6 +59,9 @@ class PivotFormulaScreen extends StatelessWidget {
         ),
       ),
 
+      // ========================================================
+      // BODY
+      // ========================================================
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
 
@@ -64,24 +72,32 @@ class PivotFormulaScreen extends StatelessWidget {
 
           children: [
             // ==================================================
-            // PENJELASAN
+            // HEADER
             // ==================================================
             _buildHeaderCard(),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
 
             // ==================================================
-            // KOMPONEN PERHITUNGAN
+            // PIVOT POINT EMAS
             // ==================================================
+            _buildMethodTitle(
+              icon: Icons.monetization_on_outlined,
+              title: 'Pivot Point Emas',
+            ),
+
+            const SizedBox(height: 12),
+
+            _buildGoldExplanationCard(),
+
+            const SizedBox(height: 20),
+
             _buildComponentCard(),
 
             const SizedBox(height: 28),
 
-            // ==================================================
-            // JUDUL RUMUS
-            // ==================================================
             const Text(
-              'Rumus Pivot Points',
+              'Rumus Pivot Point Emas',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -91,99 +107,58 @@ class PivotFormulaScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // ==================================================
-            // RESISTANCE
-            // ==================================================
-            _buildSectionTitle(
-              'Resistance (Atas)',
-              Icons.keyboard_arrow_up_rounded,
-            ),
-
-            const SizedBox(height: 15),
-
-            // R4
-            _buildResistanceItem(
-              title: 'R4',
-              formula: 'PP + (High - Low) × 3',
-              midpoint: '(R4 + R3) / 2',
-            ),
-
-            // R3
-            _buildResistanceItem(
-              title: 'R3',
-              formula: 'PP + (High - Low) × 2',
-              midpoint: '(R3 + R2) / 2',
-            ),
-
-            // R2
-            _buildResistanceItem(
-              title: 'R2',
-              formula: 'PP + (High - Low)',
-              midpoint: '(R2 + R1) / 2',
-            ),
-
-            // R1
-            _buildResistanceItem(
-              title: 'R1',
-              formula: '2 × PP - Low',
-              midpoint: '(PP + R1) / 2',
-            ),
-
-            const SizedBox(height: 10),
-
-            // ==================================================
-            // PIVOT POINT UTAMA
-            // ==================================================
-            _buildPivotPointCard(),
+            _buildPivotFormulaSection(),
 
             const SizedBox(height: 25),
 
-            // ==================================================
-            // SUPPORT
-            // ==================================================
-            _buildSectionTitle(
-              'Support (Bawah)',
-              Icons.keyboard_arrow_down_rounded,
+            _buildBuySellCard(
+              title: 'Indikasi Pivot Point Emas',
+              buyCondition: 'Open < Pivot Point',
+              sellCondition: 'Open > Pivot Point',
             ),
 
-            const SizedBox(height: 15),
-
-            // S1
-            _buildSupportItem(
-              midpoint: '(PP + S1) / 2',
-              title: 'S1',
-              formula: '2 × PP - High',
-            ),
-
-            // S2
-            _buildSupportItem(
-              midpoint: '(S1 + S2) / 2',
-              title: 'S2',
-              formula: 'PP - (High - Low)',
-            ),
-
-            // S3
-            _buildSupportItem(
-              midpoint: '(S2 + S3) / 2',
-              title: 'S3',
-              formula: 'PP - (High - Low) × 2',
-            ),
-
-            // S4
-            _buildSupportItem(
-              midpoint: '(S3 + S4) / 2',
-              title: 'S4',
-              formula: 'PP - (High - Low) × 3',
-            ),
-
-            const SizedBox(height: 25),
+            const SizedBox(height: 30),
 
             // ==================================================
-            // INDIKASI PERGERAKAN
+            // PIVOT POINT HANGSENG
             // ==================================================
-            _buildBuySellCard(),
+            _buildMethodTitle(
+              icon: Icons.bar_chart_rounded,
+              title: 'Pivot Point Hangseng',
+            ),
+
+            const SizedBox(height: 12),
+
+            _buildHangsengExplanationCard(),
 
             const SizedBox(height: 20),
+
+            _buildComponentCard(),
+
+            const SizedBox(height: 28),
+
+            const Text(
+              'Rumus Pivot Point Hangseng',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: darkBrown,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            _buildPivotFormulaSection(),
+
+            const SizedBox(height: 25),
+
+            _buildBuySellCard(
+              title: 'Indikasi Pivot Point Hangseng',
+              buyCondition: 'Open > Pivot Point',
+              sellCondition: 'Open < Pivot Point',
+            ),
+
+            const SizedBox(height: 25),
 
             // ==================================================
             // CATATAN
@@ -229,7 +204,6 @@ class PivotFormulaScreen extends StatelessWidget {
         children: [
           Text(
             'Pivot Point',
-
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -244,10 +218,102 @@ class PivotFormulaScreen extends StatelessWidget {
             'level Pivot Point, Resistance, dan '
             'Support berdasarkan data High, '
             'Low, dan Close.',
-
             style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.6),
           ),
         ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // METHOD TITLE
+  // ==========================================================
+
+  Widget _buildMethodTitle({required IconData icon, required String title}) {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+
+          decoration: BoxDecoration(
+            color: lightOrange,
+            borderRadius: BorderRadius.circular(12),
+          ),
+
+          child: Icon(icon, color: orangeColor, size: 23),
+        ),
+
+        const SizedBox(width: 11),
+
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 21,
+              fontWeight: FontWeight.bold,
+              color: darkBrown,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================================
+  // GOLD EXPLANATION
+  // ==========================================================
+
+  Widget _buildGoldExplanationCard() {
+    return Container(
+      width: double.infinity,
+
+      padding: const EdgeInsets.all(18),
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+
+        borderRadius: BorderRadius.circular(18),
+
+        border: Border.all(color: const Color(0xFFFFE0C2)),
+      ),
+
+      child: const Text(
+        'Pivot Point Emas digunakan untuk menganalisis '
+        'pergerakan harga emas berdasarkan nilai High, '
+        'Low, Close, dan Open. Hasil perhitungan digunakan '
+        'untuk melihat posisi harga terhadap Pivot Point '
+        'serta level Resistance dan Support.',
+        style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.6),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // HANGSENG EXPLANATION
+  // ==========================================================
+
+  Widget _buildHangsengExplanationCard() {
+    return Container(
+      width: double.infinity,
+
+      padding: const EdgeInsets.all(18),
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+
+        borderRadius: BorderRadius.circular(18),
+
+        border: Border.all(color: const Color(0xFFFFE0C2)),
+      ),
+
+      child: const Text(
+        'Pivot Point Hangseng menggunakan metode '
+        'perhitungan yang sama dengan Pivot Point Emas, '
+        'yaitu berdasarkan High, Low, dan Close. '
+        'Perbedaannya terdapat pada indikator BUY dan SELL '
+        'yang menggunakan arah berlawanan.',
+        style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.6),
       ),
     );
   }
@@ -276,7 +342,6 @@ class PivotFormulaScreen extends StatelessWidget {
         children: [
           const Text(
             'Komponen Perhitungan',
-
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -300,6 +365,10 @@ class PivotFormulaScreen extends StatelessWidget {
     );
   }
 
+  // ==========================================================
+  // COMPONENT ROW
+  // ==========================================================
+
   Widget _buildComponentRow({
     required String label,
     required String description,
@@ -310,6 +379,7 @@ class PivotFormulaScreen extends StatelessWidget {
       children: [
         Container(
           width: 48,
+
           padding: const EdgeInsets.symmetric(vertical: 6),
 
           decoration: BoxDecoration(
@@ -334,9 +404,95 @@ class PivotFormulaScreen extends StatelessWidget {
         Expanded(
           child: Text(
             description,
-
             style: const TextStyle(fontSize: 14, color: Colors.black54),
           ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================================
+  // PIVOT FORMULA SECTION
+  // ==========================================================
+
+  Widget _buildPivotFormulaSection() {
+    return Column(
+      children: [
+        // ======================================================
+        // RESISTANCE
+        // ======================================================
+        _buildSectionTitle(
+          'Resistance (Atas)',
+          Icons.keyboard_arrow_up_rounded,
+        ),
+
+        const SizedBox(height: 15),
+
+        _buildResistanceItem(
+          title: 'R4',
+          formula: 'PP + (High - Low) × 3',
+          midpoint: '(R4 + R3) / 2',
+        ),
+
+        _buildResistanceItem(
+          title: 'R3',
+          formula: 'PP + (High - Low) × 2',
+          midpoint: '(R3 + R2) / 2',
+        ),
+
+        _buildResistanceItem(
+          title: 'R2',
+          formula: 'PP + (High - Low)',
+          midpoint: '(R2 + R1) / 2',
+        ),
+
+        _buildResistanceItem(
+          title: 'R1',
+          formula: '2 × PP - Low',
+          midpoint: '(PP + R1) / 2',
+        ),
+
+        const SizedBox(height: 10),
+
+        // ======================================================
+        // PIVOT POINT
+        // ======================================================
+        _buildPivotPointCard(),
+
+        const SizedBox(height: 25),
+
+        // ======================================================
+        // SUPPORT
+        // ======================================================
+        _buildSectionTitle(
+          'Support (Bawah)',
+          Icons.keyboard_arrow_down_rounded,
+        ),
+
+        const SizedBox(height: 15),
+
+        _buildSupportItem(
+          midpoint: '(PP + S1) / 2',
+          title: 'S1',
+          formula: '2 × PP - High',
+        ),
+
+        _buildSupportItem(
+          midpoint: '(S1 + S2) / 2',
+          title: 'S2',
+          formula: 'PP - (High - Low)',
+        ),
+
+        _buildSupportItem(
+          midpoint: '(S2 + S3) / 2',
+          title: 'S3',
+          formula: 'PP - (High - Low) × 2',
+        ),
+
+        _buildSupportItem(
+          midpoint: '(S3 + S4) / 2',
+          title: 'S4',
+          formula: 'PP - (High - Low) × 3',
         ),
       ],
     );
@@ -355,7 +511,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
         Text(
           title,
-
           style: const TextStyle(
             fontSize: 19,
             fontWeight: FontWeight.bold,
@@ -368,16 +523,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
   // ==========================================================
   // RESISTANCE ITEM
-  //
-  // Urutan:
-  //
-  // R4
-  // Midpoint
-  //
-  // R3
-  // Midpoint
-  //
-  // dst.
   // ==========================================================
 
   Widget _buildResistanceItem({
@@ -387,9 +532,6 @@ class PivotFormulaScreen extends StatelessWidget {
   }) {
     return Column(
       children: [
-        // ======================================================
-        // R CARD
-        // ======================================================
         Container(
           width: double.infinity,
 
@@ -417,7 +559,6 @@ class PivotFormulaScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-
                 style: const TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
@@ -429,7 +570,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
               Text(
                 formula,
-
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -442,9 +582,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
         const SizedBox(height: 8),
 
-        // ======================================================
-        // ARROW
-        // ======================================================
         const Icon(
           Icons.keyboard_arrow_down_rounded,
           color: Color(0xFFCC8A4D),
@@ -453,9 +590,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
         const SizedBox(height: 4),
 
-        // ======================================================
-        // MIDPOINT CARD
-        // ======================================================
         _buildMidpointCard(midpoint),
 
         const SizedBox(height: 16),
@@ -465,16 +599,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
   // ==========================================================
   // SUPPORT ITEM
-  //
-  // Urutan:
-  //
-  // Midpoint
-  // S1
-  //
-  // Midpoint
-  // S2
-  //
-  // dst.
   // ==========================================================
 
   Widget _buildSupportItem({
@@ -484,16 +608,10 @@ class PivotFormulaScreen extends StatelessWidget {
   }) {
     return Column(
       children: [
-        // ======================================================
-        // MIDPOINT CARD
-        // ======================================================
         _buildMidpointCard(midpoint),
 
         const SizedBox(height: 8),
 
-        // ======================================================
-        // ARROW
-        // ======================================================
         const Icon(
           Icons.keyboard_arrow_down_rounded,
           color: Color(0xFFCC8A4D),
@@ -502,9 +620,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
         const SizedBox(height: 4),
 
-        // ======================================================
-        // S CARD
-        // ======================================================
         Container(
           width: double.infinity,
 
@@ -532,7 +647,6 @@ class PivotFormulaScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-
                 style: const TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
@@ -544,7 +658,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
               Text(
                 formula,
-
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -605,7 +718,6 @@ class PivotFormulaScreen extends StatelessWidget {
               children: [
                 const Text(
                   'Midpoint',
-
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -617,7 +729,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
                 Text(
                   midpoint,
-
                   style: const TextStyle(
                     fontSize: 13,
                     color: darkBrown,
@@ -662,7 +773,6 @@ class PivotFormulaScreen extends StatelessWidget {
         children: [
           const Text(
             'PP',
-
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -674,7 +784,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
           const Text(
             'Pivot Point',
-
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -696,7 +805,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
             child: const Text(
               'PP = (High + Low + Close) / 3',
-
               textAlign: TextAlign.center,
 
               style: TextStyle(
@@ -712,7 +820,6 @@ class PivotFormulaScreen extends StatelessWidget {
           const Text(
             'Nilai pusat sebagai dasar perhitungan '
             'Resistance dan Support.',
-
             textAlign: TextAlign.center,
 
             style: TextStyle(fontSize: 12, color: Colors.black54, height: 1.4),
@@ -726,7 +833,11 @@ class PivotFormulaScreen extends StatelessWidget {
   // BUY SELL CARD
   // ==========================================================
 
-  Widget _buildBuySellCard() {
+  Widget _buildBuySellCard({
+    required String title,
+    required String buyCondition,
+    required String sellCondition,
+  }) {
     return Container(
       width: double.infinity,
 
@@ -744,10 +855,9 @@ class PivotFormulaScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-          const Text(
-            'Indikasi Pergerakan',
-
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: darkBrown,
@@ -756,25 +866,27 @@ class PivotFormulaScreen extends StatelessWidget {
 
           const SizedBox(height: 15),
 
-          // BUY
           _buildSignalRow(
             icon: Icons.trending_up_rounded,
             title: 'BUY',
-            condition: 'Open < Pivot Point',
+            condition: buyCondition,
           ),
 
           const SizedBox(height: 12),
 
-          // SELL
           _buildSignalRow(
             icon: Icons.trending_down_rounded,
             title: 'SELL',
-            condition: 'Open > Pivot Point',
+            condition: sellCondition,
           ),
         ],
       ),
     );
   }
+
+  // ==========================================================
+  // SIGNAL ROW
+  // ==========================================================
 
   Widget _buildSignalRow({
     required IconData icon,
@@ -800,14 +912,12 @@ class PivotFormulaScreen extends StatelessWidget {
           Expanded(
             child: Text(
               condition,
-
               style: const TextStyle(fontSize: 14, color: darkBrown),
             ),
           ),
 
           Text(
             title,
-
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
@@ -843,7 +953,6 @@ class PivotFormulaScreen extends StatelessWidget {
         children: [
           Text(
             'Catatan',
-
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -856,7 +965,6 @@ class PivotFormulaScreen extends StatelessWidget {
           Text(
             'Pivot Point hanya dapat dihitung setelah '
             'pasar ditutup.',
-
             style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.5),
           ),
 
@@ -864,7 +972,6 @@ class PivotFormulaScreen extends StatelessWidget {
 
           Text(
             'Periode: 06.00 pagi - 03.30 pagi',
-
             style: TextStyle(
               fontSize: 13,
               color: orangeColor,
