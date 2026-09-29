@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:aurum/views/calculator/physical_gold_calculator.dart';
-import 'package:aurum/views/calculator/pivot_calculator.dart';
-import 'package:aurum/views/calculator/pivot_hangseng_calculator.dart';
-import 'package:aurum/views/calculator/nest_calculator.dart';
+import '../../viewmodels/calculator_menu_viewmodel.dart';
 
 class CalculatorMenuScreen extends StatefulWidget {
   const CalculatorMenuScreen({super.key});
@@ -13,17 +10,68 @@ class CalculatorMenuScreen extends StatefulWidget {
 }
 
 class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
-  Widget? _selectedCalculator;
+  // ============================================================
+  // VIEWMODEL
+  // ============================================================
+
+  final CalculatorMenuViewModel _viewModel = CalculatorMenuViewModel();
+
+  // ============================================================
+  // COLOR
+  // ============================================================
 
   static const Color backgroundColor = Color(0xFFFFF8F0);
+
   static const Color orangeColor = Color(0xFFF28C28);
+
   static const Color darkBrownColor = Color(0xFF3D2B1F);
+
   static const Color lightOrangeColor = Color(0xFFFFE5CC);
+
+  // ============================================================
+  // INIT
+  // ============================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    _viewModel.addListener(_onViewModelChanged);
+  }
+
+  // ============================================================
+  // VIEWMODEL LISTENER
+  // ============================================================
+
+  void _onViewModelChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+  }
+
+  // ============================================================
+  // DISPOSE
+  // ============================================================
+
+  @override
+  void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
+
+    _viewModel.dispose();
+
+    super.dispose();
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedCalculator != null) {
-      return _selectedCalculator!;
+    if (_viewModel.selectedCalculator != null) {
+      return _viewModel.selectedCalculator!;
     }
 
     return Scaffold(
@@ -68,8 +116,10 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+
             children: [
               _buildSectionTitle(
                 title: 'Kalkulator',
@@ -97,69 +147,76 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
     );
   }
 
+  // ============================================================
+  // SECTION TITLE
+  // ============================================================
+
   Widget _buildSectionTitle({required String title, required String subtitle}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+
       children: [
         Text(
           title,
+
           style: const TextStyle(
             color: darkBrownColor,
             fontSize: 21,
             fontWeight: FontWeight.bold,
           ),
         ),
+
         const SizedBox(height: 6),
+
         Text(
           subtitle,
+
           style: const TextStyle(color: Colors.black54, fontSize: 13),
         ),
       ],
     );
   }
 
+  // ============================================================
+  // CALCULATOR LIST
+  // ============================================================
+
   Widget _buildCalculatorList() {
     return Column(
       children: [
         _buildCalculatorCard(
           icon: Icons.monetization_on_outlined,
-          title: 'Emas Fisik',
-          description:
-              'Menghitung estimasi keuntungan berdasarkan modal, kurs, harga beli, dan harga jual.',
+
+          title: _viewModel.calculatorMenus[0].title,
+
+          description: _viewModel.calculatorMenus[0].description,
+
           onTap: () {
-            setState(() {
-              _selectedCalculator = PhysicalGoldCalculator(
-                onBack: () {
-                  setState(() {
-                    _selectedCalculator = null;
-                  });
-                },
-              );
-            });
+            _viewModel.openPhysicalGoldCalculator(
+              _viewModel.clearSelectedCalculator,
+            );
           },
         ),
       ],
     );
   }
 
+  // ============================================================
+  // TRANSACTION CONCEPT LIST
+  // ============================================================
+
   Widget _buildTransactionConceptList() {
     return Column(
       children: [
         _buildCalculatorCard(
           icon: Icons.show_chart_rounded,
-          title: 'Pivot Point Emas',
-          description:
-              'Menghitung Pivot Point emas berdasarkan harga High, Low, dan Close.',
+
+          title: _viewModel.transactionConceptMenus[0].title,
+
+          description: _viewModel.transactionConceptMenus[0].description,
+
           onTap: () {
-            setState(() {
-              _selectedCalculator = PivotCalculator(
-                onBack: () {
-                  setState(() {
-                    _selectedCalculator = null;
-                  });
-                },
-              );
-            });
+            _viewModel.openPivotCalculator(_viewModel.clearSelectedCalculator);
           },
         ),
 
@@ -167,19 +224,15 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
 
         _buildCalculatorCard(
           icon: Icons.trending_up_rounded,
-          title: 'Pivot Point Hang Seng',
-          description:
-              'Menghitung Pivot Point Hang Seng berdasarkan harga High, Low, dan Close.',
+
+          title: _viewModel.transactionConceptMenus[1].title,
+
+          description: _viewModel.transactionConceptMenus[1].description,
+
           onTap: () {
-            setState(() {
-              _selectedCalculator = PivotHangsengCalculator(
-                onBack: () {
-                  setState(() {
-                    _selectedCalculator = null;
-                  });
-                },
-              );
-            });
+            _viewModel.openPivotHangsengCalculator(
+              _viewModel.clearSelectedCalculator,
+            );
           },
         ),
 
@@ -187,24 +240,22 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
 
         _buildCalculatorCard(
           icon: Icons.account_tree_outlined,
-          title: 'Nest',
-          description:
-              'Menampilkan indikator BUY atau SELL berdasarkan perbandingan harga Open dan Close.',
+
+          title: _viewModel.transactionConceptMenus[2].title,
+
+          description: _viewModel.transactionConceptMenus[2].description,
+
           onTap: () {
-            setState(() {
-              _selectedCalculator = NestCalculatorScreen(
-                onBack: () {
-                  setState(() {
-                    _selectedCalculator = null;
-                  });
-                },
-              );
-            });
+            _viewModel.openNestCalculator(_viewModel.clearSelectedCalculator);
           },
         ),
       ],
     );
   }
+
+  // ============================================================
+  // CALCULATOR CARD
+  // ============================================================
 
   Widget _buildCalculatorCard({
     required IconData icon,
@@ -214,14 +265,21 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
   }) {
     return InkWell(
       onTap: onTap,
+
       borderRadius: BorderRadius.circular(17),
+
       child: Container(
         width: double.infinity,
+
         padding: const EdgeInsets.all(14),
+
         decoration: BoxDecoration(
           color: Colors.white,
+
           borderRadius: BorderRadius.circular(17),
+
           border: Border.all(color: lightOrangeColor, width: 1.2),
+
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.035),
@@ -230,16 +288,20 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
             ),
           ],
         ),
+
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
+
           children: [
             Container(
               width: 50,
               height: 50,
+
               decoration: BoxDecoration(
                 color: lightOrangeColor,
                 borderRadius: BorderRadius.circular(15),
               ),
+
               child: Icon(icon, color: orangeColor, size: 26),
             ),
 
@@ -248,9 +310,11 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+
                 children: [
                   Text(
                     title,
+
                     style: const TextStyle(
                       color: darkBrownColor,
                       fontSize: 16,
@@ -262,6 +326,7 @@ class _CalculatorMenuScreenState extends State<CalculatorMenuScreen> {
 
                   Text(
                     description,
+
                     style: const TextStyle(
                       color: Colors.black54,
                       fontSize: 12,

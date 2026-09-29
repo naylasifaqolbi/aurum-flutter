@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../services/historical_api_service.dart';
+import '../../viewmodels/dashboard_viewmodel.dart';
+
 import 'physical_gold_formula_screen.dart';
 import 'pivot_formula_screen.dart';
 import 'nest_formula_screen.dart';
@@ -31,24 +31,10 @@ class DashboardScreenState extends State<DashboardScreen> {
   static const Color lightOrange = Color(0xFFFFE5CC);
 
   // ============================================================
-  // CATEGORY DASHBOARD
+  // VIEWMODEL
   // ============================================================
 
-  static const String _dashboardCategory = 'LGD Daily';
-
-  // ============================================================
-  // DATA HARGA TERBARU
-  // ============================================================
-
-  Map<String, String> _latestGoldData = {};
-
-  String _nama = '-';
-
-  // ============================================================
-  // LOADING DATA
-  // ============================================================
-
-  bool _isLoadingGoldData = true;
+  late final DashboardViewModel _viewModel;
 
   // ============================================================
   // INIT
@@ -58,128 +44,49 @@ class DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
 
-    _loadLatestGoldData();
-    loadProfile();
+    _viewModel = DashboardViewModel();
+
+    _viewModel.addListener(_onViewModelChanged);
+
+    _viewModel.initialize();
   }
 
   // ============================================================
-  // LOAD PROFILE DARI SUPABASE
+  // VIEWMODEL LISTENER
   // ============================================================
+
+  void _onViewModelChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+  }
+
+  // ============================================================
+  // LOAD PROFILE
+  // ============================================================
+  //
+  // Tetap dipertahankan karena MainNavigationScreen
+  // memanggil DashboardScreenState.loadProfile().
+  //
+  // Sekarang proses sebenarnya sudah berada di ViewModel.
+  //
 
   Future<void> loadProfile() async {
-    final user = Supabase.instance.client.auth.currentUser;
-
-    if (user == null) return;
-
-    try {
-      final profile = await Supabase.instance.client
-          .from('profiles')
-          .select('name')
-          .eq('id', user.id)
-          .single();
-
-      if (!mounted) return;
-
-      setState(() {
-        _nama = profile['name'] ?? '-';
-      });
-    } catch (_) {
-      if (!mounted) return;
-
-      setState(() {
-        _nama = '-';
-      });
-    }
+    await _viewModel.loadProfile();
   }
 
   // ============================================================
-  // LOAD DATA LGD TERBARU
+  // DISPOSE
   // ============================================================
 
-  Future<void> _loadLatestGoldData() async {
-    try {
-      // ========================================================
-      // AMBIL DATA DARI HISTORICAL API SERVICE
-      // ========================================================
+  @override
+  void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
+    _viewModel.dispose();
 
-      final Map<String, dynamic> result =
-          await HistoricalApiService.getHistoricalData(
-            category: _dashboardCategory,
-            page: 1,
-            limit: 10,
-          );
-
-      // ========================================================
-      // AMBIL DATA DARI RESPONSE
-      // ========================================================
-
-      final dynamic rawData = result['data'];
-
-      if (rawData is List && rawData.isNotEmpty) {
-        final dynamic firstItem = rawData.first;
-
-        if (firstItem is Map) {
-          final Map<String, String> latestData = {
-            'date': firstItem['date']?.toString() ?? '-',
-            'open': firstItem['open']?.toString() ?? '-',
-            'high': firstItem['high']?.toString() ?? '-',
-            'low': firstItem['low']?.toString() ?? '-',
-            'close': firstItem['close']?.toString() ?? '-',
-          };
-
-          if (!mounted) {
-            return;
-          }
-
-          setState(() {
-            _latestGoldData = latestData;
-            _isLoadingGoldData = false;
-          });
-
-          return;
-        }
-      }
-
-      // ========================================================
-      // JIKA DATA KOSONG
-      // ========================================================
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _latestGoldData = {
-          'date': '-',
-          'open': '-',
-          'high': '-',
-          'low': '-',
-          'close': '-',
-        };
-
-        _isLoadingGoldData = false;
-      });
-    } catch (_) {
-      // ========================================================
-      // JIKA API DAN CACHE TIDAK TERSEDIA
-      // ========================================================
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _latestGoldData = {
-          'date': '-',
-          'open': '-',
-          'high': '-',
-          'low': '-',
-          'close': '-',
-        };
-
-        _isLoadingGoldData = false;
-      });
-    }
+    super.dispose();
   }
 
   // ============================================================
@@ -256,7 +163,7 @@ class DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 5),
 
               Text(
-                _nama,
+                _viewModel.nama,
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -405,15 +312,15 @@ class DashboardScreenState extends State<DashboardScreen> {
   // ============================================================
 
   Widget _buildGoldPriceCard(BuildContext context) {
-    final String latestDate = _latestGoldData['date'] ?? '-';
+    final String latestDate = _viewModel.latestGoldData.date;
 
-    final String latestOpen = _latestGoldData['open'] ?? '-';
+    final String latestOpen = _viewModel.latestGoldData.open;
 
-    final String latestHigh = _latestGoldData['high'] ?? '-';
+    final String latestHigh = _viewModel.latestGoldData.high;
 
-    final String latestLow = _latestGoldData['low'] ?? '-';
+    final String latestLow = _viewModel.latestGoldData.low;
 
-    final String latestClose = _latestGoldData['close'] ?? '-';
+    final String latestClose = _viewModel.latestGoldData.close;
 
     return Container(
       width: double.infinity,
@@ -482,7 +389,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 4),
 
                     Text(
-                      _isLoadingGoldData
+                      _viewModel.isLoadingGoldData
                           ? 'Memuat data...'
                           : _formatLatestDate(latestDate),
                       style: const TextStyle(
@@ -527,14 +434,14 @@ class DashboardScreenState extends State<DashboardScreen> {
               Expanded(
                 child: _buildPriceItem(
                   label: 'OPEN',
-                  value: _isLoadingGoldData ? '...' : latestOpen,
+                  value: _viewModel.isLoadingGoldData ? '...' : latestOpen,
                 ),
               ),
 
               Expanded(
                 child: _buildPriceItem(
                   label: 'HIGH',
-                  value: _isLoadingGoldData ? '...' : latestHigh,
+                  value: _viewModel.isLoadingGoldData ? '...' : latestHigh,
                 ),
               ),
             ],
@@ -547,14 +454,14 @@ class DashboardScreenState extends State<DashboardScreen> {
               Expanded(
                 child: _buildPriceItem(
                   label: 'LOW',
-                  value: _isLoadingGoldData ? '...' : latestLow,
+                  value: _viewModel.isLoadingGoldData ? '...' : latestLow,
                 ),
               ),
 
               Expanded(
                 child: _buildPriceItem(
                   label: 'CLOSE',
-                  value: _isLoadingGoldData ? '...' : latestClose,
+                  value: _viewModel.isLoadingGoldData ? '...' : latestClose,
                 ),
               ),
             ],

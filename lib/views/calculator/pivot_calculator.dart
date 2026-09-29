@@ -2,21 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../viewmodels/history_viewmodel.dart';
+import '../../viewmodels/pivot_calculator_viewmodel.dart';
+
 import 'pivot_result.dart';
 
-import '../../services/historical_api_service.dart';
-import '../../viewmodels/history_viewmodel.dart';
-
-class PivotCalculator extends StatefulWidget {
+class PivotCalculator extends StatelessWidget {
   final VoidCallback? onBack;
 
   const PivotCalculator({super.key, this.onBack});
 
   @override
-  State<PivotCalculator> createState() => _PivotCalculatorState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => PivotCalculatorViewModel(
+        historyViewModel: context.read<HistoryViewModel>(),
+      )..loadLatestHistoricalData(),
+      child: _PivotCalculatorView(onBack: onBack),
+    );
+  }
 }
 
-class _PivotCalculatorState extends State<PivotCalculator> {
+class _PivotCalculatorView extends StatefulWidget {
+  final VoidCallback? onBack;
+
+  const _PivotCalculatorView({this.onBack});
+
+  @override
+  State<_PivotCalculatorView> createState() => _PivotCalculatorViewState();
+}
+
+class _PivotCalculatorViewState extends State<_PivotCalculatorView> {
   // ============================================================
   // FORM KEY
   // ============================================================
@@ -35,62 +51,48 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
   final TextEditingController _closeController = TextEditingController();
 
-  bool _isLoadingHistorical = true;
-
-  // ============================================================
-  // INIT
-  // ============================================================
-
   @override
   void initState() {
     super.initState();
 
-    _loadLatestHistoricalData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      final viewModel = context.read<PivotCalculatorViewModel>();
+
+      viewModel.addListener(_updateHistoricalControllers);
+
+      _updateHistoricalControllers();
+    });
   }
 
   // ============================================================
-  // LOAD DATA HISTORICAL TERBARU
+  // UPDATE CONTROLLER DARI VIEWMODEL
   // ============================================================
 
-  Future<void> _loadLatestHistoricalData() async {
-    try {
-      final result = await HistoricalApiService.getHistoricalData(
-        category: HistoricalApiService.defaultCategory,
-        page: 1,
-        limit: 10,
-      );
+  void _updateHistoricalControllers() {
+    if (!mounted) {
+      return;
+    }
 
-      final dynamic rawData = result['data'];
+    final viewModel = context.read<PivotCalculatorViewModel>();
 
-      if (rawData is List && rawData.isNotEmpty) {
-        final latest = rawData.first;
+    if (viewModel.isLoadingHistorical) {
+      return;
+    }
 
-        if (!mounted) {
-          return;
-        }
+    if (viewModel.historicalHigh.isNotEmpty) {
+      _highController.text = viewModel.historicalHigh;
+    }
 
-        setState(() {
-          _highController.text = latest['high']?.toString() ?? '';
-          _lowController.text = latest['low']?.toString() ?? '';
-          _closeController.text = latest['close']?.toString() ?? '';
-          _isLoadingHistorical = false;
-        });
-      } else {
-        if (!mounted) return;
+    if (viewModel.historicalLow.isNotEmpty) {
+      _lowController.text = viewModel.historicalLow;
+    }
 
-        setState(() {
-          _isLoadingHistorical = false;
-        });
-      }
-    } catch (_) {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoadingHistorical = false;
-      });
-
-      // Jika gagal mengambil historical data,
-      // user tetap bisa mengisi kalkulator secara manual.
+    if (viewModel.historicalClose.isNotEmpty) {
+      _closeController.text = viewModel.historicalClose;
     }
   }
 
@@ -100,6 +102,10 @@ class _PivotCalculatorState extends State<PivotCalculator> {
 
   @override
   void dispose() {
+    final viewModel = context.read<PivotCalculatorViewModel>();
+
+    viewModel.removeListener(_updateHistoricalControllers);
+
     _openController.dispose();
     _highController.dispose();
     _lowController.dispose();
@@ -142,132 +148,23 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     );
 
     // ==========================================================
-    // PIVOT POINT
-    //
-    // PP = (High + Low + Close) / 3
+    // HITUNG MELALUI VIEWMODEL
     // ==========================================================
 
-    final double pp = (high + low + close) / 3;
+    final viewModel = context.read<PivotCalculatorViewModel>();
 
-    // ==========================================================
-    // RANGE
-    // ==========================================================
-
-    final double range = high - low;
-
-    // ==========================================================
-    // RESISTANCE
-    // ==========================================================
-
-    // R4
-    // PP + (High - Low) x 3
-    final double r4 = pp + (range * 3);
-
-    // R3
-    // PP + (High - Low) x 2
-    final double r3 = pp + (range * 2);
-
-    // R2
-    // PP + (High - Low)
-    final double r2 = pp + range;
-
-    // R1
-    // 2 x PP - Low
-    final double r1 = (2 * pp) - low;
-
-    // ==========================================================
-    // SUPPORT
-    // ==========================================================
-
-    // S1
-    // 2 x PP - High
-    final double s1 = (2 * pp) - high;
-
-    // S2
-    // PP - (High - Low)
-    final double s2 = pp - range;
-
-    // S3
-    // PP - (High - Low) x 2
-    final double s3 = pp - (range * 2);
-
-    // S4
-    // PP - (High - Low) x 3
-    final double s4 = pp - (range * 3);
-
-    // ==========================================================
-    // MIDPOINT RESISTANCE
-    // ==========================================================
-
-    // Midpoint R4 - R3
-    final double midpointR4R3 = (r4 + r3) / 2;
-
-    // Midpoint R3 - R2
-    final double midpointR3R2 = (r3 + r2) / 2;
-
-    // Midpoint R2 - R1
-    final double midpointR2R1 = (r2 + r1) / 2;
-
-    // Midpoint PP - R1
-    final double midpointPPR1 = (pp + r1) / 2;
-
-    // ==========================================================
-    // MIDPOINT SUPPORT
-    // ==========================================================
-
-    // Midpoint PP - S1
-    final double midpointPPS1 = (pp + s1) / 2;
-
-    // Midpoint S1 - S2
-    final double midpointS1S2 = (s1 + s2) / 2;
-
-    // Midpoint S2 - S3
-    final double midpointS2S3 = (s2 + s3) / 2;
-
-    // Midpoint S3 - S4
-    final double midpointS3S4 = (s3 + s4) / 2;
-
-    // ==========================================================
-    // INDIKASI
-    // ==========================================================
-
-    final String indication = open < pp ? 'BUY' : 'SELL';
-
-    // ==========================================================
-    // SIMPAN HISTORY
-    // ==========================================================
-
-    final historySaved = await context.read<HistoryViewModel>().saveHistory(
-      calculatorType: 'pivot_gold',
-      inputData: {'open': open, 'high': high, 'low': low, 'close': close},
-      resultData: {
-        'pp': pp,
-
-        'r1': r1,
-        'r2': r2,
-        'r3': r3,
-        'r4': r4,
-
-        's1': s1,
-        's2': s2,
-        's3': s3,
-        's4': s4,
-
-        'midpoint_r4_r3': midpointR4R3,
-        'midpoint_r3_r2': midpointR3R2,
-        'midpoint_r2_r1': midpointR2R1,
-        'midpoint_pp_r1': midpointPPR1,
-
-        'midpoint_pp_s1': midpointPPS1,
-        'midpoint_s1_s2': midpointS1S2,
-        'midpoint_s2_s3': midpointS2S3,
-        'midpoint_s3_s4': midpointS3S4,
-
-        'indication': indication,
-      },
+    final result = await viewModel.hitung(
+      open: open,
+      high: high,
+      low: low,
+      close: close,
     );
 
-    if (!historySaved) {
+    if (!mounted) {
+      return;
+    }
+
+    if (result == null) {
       return;
     }
 
@@ -279,34 +176,40 @@ class _PivotCalculatorState extends State<PivotCalculator> {
       context,
       MaterialPageRoute(
         builder: (context) => PivotResult(
-          open: open,
-          high: high,
-          low: low,
-          close: close,
+          open: result.open,
+          high: result.high,
+          low: result.low,
+          close: result.close,
 
-          pp: pp,
+          pp: result.pp,
 
-          r1: r1,
-          r2: r2,
-          r3: r3,
-          r4: r4,
+          r1: result.r1,
+          r2: result.r2,
+          r3: result.r3,
+          r4: result.r4,
 
-          s1: s1,
-          s2: s2,
-          s3: s3,
-          s4: s4,
+          s1: result.s1,
+          s2: result.s2,
+          s3: result.s3,
+          s4: result.s4,
 
-          midpointR4R3: midpointR4R3,
-          midpointR3R2: midpointR3R2,
-          midpointR2R1: midpointR2R1,
-          midpointPPR1: midpointPPR1,
+          midpointR4R3: result.midpointR4R3,
 
-          midpointPPS1: midpointPPS1,
-          midpointS1S2: midpointS1S2,
-          midpointS2S3: midpointS2S3,
-          midpointS3S4: midpointS3S4,
+          midpointR3R2: result.midpointR3R2,
 
-          indication: indication,
+          midpointR2R1: result.midpointR2R1,
+
+          midpointPPR1: result.midpointPPR1,
+
+          midpointPPS1: result.midpointPPS1,
+
+          midpointS1S2: result.midpointS1S2,
+
+          midpointS2S3: result.midpointS2S3,
+
+          midpointS3S4: result.midpointS3S4,
+
+          indication: result.indication,
         ),
       ),
     );
@@ -533,7 +436,6 @@ class _PivotCalculatorState extends State<PivotCalculator> {
   Widget _buildInputLabel(String label) {
     return Text(
       label,
-
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
@@ -553,74 +455,84 @@ class _PivotCalculatorState extends State<PivotCalculator> {
     required String errorMessage,
     bool showLoading = true,
   }) {
-    return TextFormField(
-      controller: controller,
+    return Consumer<PivotCalculatorViewModel>(
+      builder: (context, viewModel, child) {
+        final isLoading = showLoading && viewModel.isLoadingHistorical;
 
-      readOnly: showLoading && _isLoadingHistorical,
+        return TextFormField(
+          controller: controller,
 
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          readOnly: isLoading,
 
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return errorMessage;
-        }
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
 
-        final double? number = double.tryParse(
-          value.trim().replaceAll(',', '.'),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return errorMessage;
+            }
+
+            final double? number = double.tryParse(
+              value.trim().replaceAll(',', '.'),
+            );
+
+            if (number == null) {
+              return 'Masukkan angka yang valid';
+            }
+
+            return null;
+          },
+
+          decoration: InputDecoration(
+            hintText: isLoading ? 'Memuat data...' : hintText,
+
+            hintStyle: const TextStyle(color: Color(0xFF888888), fontSize: 14),
+
+            prefixIcon: isLoading
+                ? const SizedBox(
+                    width: 50,
+                    child: Center(child: _LoadingArrow()),
+                  )
+                : Icon(icon, color: const Color(0xFFF28C28)),
+
+            filled: true,
+
+            fillColor: Colors.white,
+
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFE8E8E8)),
+            ),
+
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFE8E8E8)),
+            ),
+
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: Color(0xFFF28C28),
+                width: 1.5,
+              ),
+            ),
+
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
         );
-
-        if (number == null) {
-          return 'Masukkan angka yang valid';
-        }
-
-        return null;
       },
-
-      decoration: InputDecoration(
-        hintText: showLoading && _isLoadingHistorical
-            ? 'Memuat data...'
-            : hintText,
-
-        hintStyle: const TextStyle(color: Color(0xFF888888), fontSize: 14),
-
-        prefixIcon: showLoading && _isLoadingHistorical
-            ? const SizedBox(width: 50, child: Center(child: _LoadingArrow()))
-            : Icon(icon, color: const Color(0xFFF28C28)),
-
-        filled: true,
-
-        fillColor: Colors.white,
-
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE8E8E8)),
-        ),
-
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFE8E8E8)),
-        ),
-
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFF28C28), width: 1.5),
-        ),
-
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
-
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-      ),
     );
   }
 }

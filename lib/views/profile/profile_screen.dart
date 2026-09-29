@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../viewmodels/profile_viewmodel.dart';
 import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
 import 'app_settings_screen.dart';
@@ -15,47 +15,42 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _nama = '-';
-  String _email = '-';
-  String _phone = '-';
-  String? _avatarUrl;
+  late final ProfileViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+
+    _viewModel = ProfileViewModel();
+    _viewModel.addListener(_onViewModelChanged);
+
+    _viewModel.loadProfile();
   }
 
   // ==========================================
-  // LOAD PROFILE DARI SUPABASE
+  // UPDATE UI SAAT VIEWMODEL BERUBAH
   // ==========================================
+
+  void _onViewModelChanged() {
+    if (!mounted) return;
+
+    setState(() {});
+  }
+
+  // ==========================================
+  // LOAD PROFILE
+  // ==========================================
+
   Future<void> _loadProfile() async {
-    final user = Supabase.instance.client.auth.currentUser;
+    await _viewModel.loadProfile();
+  }
 
-    if (user == null) return;
+  @override
+  void dispose() {
+    _viewModel.removeListener(_onViewModelChanged);
+    _viewModel.dispose();
 
-    try {
-      final profile = await Supabase.instance.client
-          .from('profiles')
-          .select('name, phone, avatar_url')
-          .eq('id', user.id)
-          .single();
-
-      if (!mounted) return;
-
-      setState(() {
-        _nama = profile['name'] ?? '-';
-        _phone = profile['phone'] ?? '-';
-        _email = user.email ?? '-';
-        _avatarUrl = profile['avatar_url'];
-      });
-    } catch (error) {
-      if (!mounted) return;
-
-      setState(() {
-        _email = user.email ?? '-';
-      });
-    }
+    super.dispose();
   }
 
   @override
@@ -121,7 +116,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
-
                   border: Border.all(color: const Color(0xFFF28C28), width: 1),
                 ),
 
@@ -143,10 +137,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             shape: BoxShape.circle,
                           ),
 
-                          child: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                          child:
+                              _viewModel.avatarUrl != null &&
+                                  _viewModel.avatarUrl!.isNotEmpty
                               ? ClipOval(
                                   child: Image.network(
-                                    '${_avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}',
+                                    '${_viewModel.avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}',
                                     width: 64,
                                     height: 64,
                                     fit: BoxFit.cover,
@@ -193,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         children: [
                           Text(
-                            _nama,
+                            _viewModel.nama,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
 
@@ -207,7 +203,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(height: 4),
 
                           Text(
-                            _email,
+                            _viewModel.email,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
 
@@ -517,11 +513,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             ElevatedButton(
               onPressed: () async {
-                await Supabase.instance.client.auth.signOut();
-
-                print(
-                  'SESSION SETELAH LOGOUT: ${Supabase.instance.client.auth.currentSession}',
-                );
+                await _viewModel.logout();
 
                 if (!context.mounted) return;
 
