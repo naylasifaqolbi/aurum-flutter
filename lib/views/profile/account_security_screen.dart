@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../viewmodels/account_security_viewmodel.dart';
 
 class AccountSecurityScreen extends StatefulWidget {
   const AccountSecurityScreen({super.key});
@@ -9,16 +10,15 @@ class AccountSecurityScreen extends StatefulWidget {
 }
 
 class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
-  bool _showCurrentPassword = false;
-  bool _showNewPassword = false;
-  bool _showConfirmPassword = false;
-  bool _isLoading = false;
+  // ==================================================
+  // VIEWMODEL
+  // ==================================================
 
-  bool get _hasMinLength => _passwordController.text.length >= 6;
+  late final AccountSecurityViewModel _viewModel;
 
-  bool get _hasLetter => RegExp(r'[A-Za-z]').hasMatch(_passwordController.text);
-
-  bool get _hasNumber => RegExp(r'\d').hasMatch(_passwordController.text);
+  // ==================================================
+  // CONTROLLERS
+  // ==================================================
 
   final TextEditingController _currentPasswordController =
       TextEditingController();
@@ -28,102 +28,84 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  // ==================================================
+  // PASSWORD VISIBILITY
+  // ==================================================
+
+  bool _showCurrentPassword = false;
+  bool _showNewPassword = false;
+  bool _showConfirmPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _viewModel = AccountSecurityViewModel();
+
+    _viewModel.addListener(_onViewModelChanged);
+  }
+
+  // ==================================================
+  // UPDATE UI SAAT VIEWMODEL BERUBAH
+  // ==================================================
+
+  void _onViewModelChanged() {
+    if (!mounted) return;
+
+    setState(() {});
+  }
+
   @override
   void dispose() {
     _currentPasswordController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+
+    _viewModel.removeListener(_onViewModelChanged);
+
+    _viewModel.dispose();
+
     super.dispose();
   }
 
+  // ==================================================
+  // UBAH PASSWORD
+  // ==================================================
+
   Future<void> _ubahPassword() async {
     // ==========================================
-    // VALIDASI FIELD WAJIB
+    // SIMPAN DATA KE VIEWMODEL
     // ==========================================
 
-    if (_currentPasswordController.text.trim().isEmpty ||
-        _passwordController.text.trim().isEmpty ||
-        _confirmPasswordController.text.trim().isEmpty) {
+    _viewModel.setCurrentPassword(_currentPasswordController.text);
+
+    _viewModel.setNewPassword(_passwordController.text);
+
+    _viewModel.setConfirmPassword(_confirmPasswordController.text);
+
+    // ==========================================
+    // VALIDASI
+    // ==========================================
+
+    final validationMessage = _viewModel.validatePassword();
+
+    if (validationMessage != null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Semua data wajib diisi.')));
+      ).showSnackBar(SnackBar(content: Text(validationMessage)));
 
       return;
     }
 
     // ==========================================
-    // VALIDASI PASSWORD BARU
+    // UPDATE PASSWORD
     // ==========================================
 
-    if (!_hasMinLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password baru minimal 6 karakter.')),
-      );
+    final bool success = await _viewModel.ubahPassword();
 
-      return;
-    }
+    if (!mounted) return;
 
-    if (!_hasLetter) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password baru harus mengandung huruf.')),
-      );
-
-      return;
-    }
-
-    if (!_hasNumber) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password baru harus mengandung angka.')),
-      );
-
-      return;
-    }
-
-    // ==========================================
-    // VALIDASI KONFIRMASI PASSWORD
-    // ==========================================
-
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Konfirmasi password tidak sesuai.')),
-      );
-
-      return;
-    }
-
-    // ==========================================
-    // UPDATE PASSWORD SUPABASE
-    // ==========================================
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-
-      if (user == null || user.email == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sesi login tidak ditemukan. Silakan login kembali.'),
-          ),
-        );
-
-        return;
-      }
-
-      // ==========================================
-      // SIMPAN PASSWORD BARU
-      // ==========================================
-
-      await Supabase.instance.client.auth.updateUser(
-        UserAttributes(
-          password: _passwordController.text,
-          currentPassword: _currentPasswordController.text,
-        ),
-      );
-
-      if (!mounted) return;
-
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password berhasil diperbarui.')),
       );
@@ -133,27 +115,15 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
       if (!mounted) return;
 
       Navigator.pop(context);
-    } on AuthException catch (error) {
-      if (!mounted) return;
-
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message), backgroundColor: Colors.red),
-      );
-    } catch (error) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Terjadi kesalahan. Silakan coba lagi.'),
+        SnackBar(
+          content: Text(
+            _viewModel.errorMessage ?? 'Terjadi kesalahan. Silakan coba lagi.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -195,10 +165,14 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
+
           child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
         ),
       ),
 
+      // ==========================================
+      // BODY
+      // ==========================================
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -293,6 +267,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                       controller: _currentPasswordController,
                       hintText: 'Masukkan password saat ini',
                       obscureText: !_showCurrentPassword,
+                      onChanged: (value) {
+                        _viewModel.setCurrentPassword(value);
+                      },
                       onToggle: () {
                         setState(() {
                           _showCurrentPassword = !_showCurrentPassword;
@@ -313,8 +290,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                       controller: _passwordController,
                       hintText: 'Masukkan password baru',
                       obscureText: !_showNewPassword,
-                      onChanged: (_) {
-                        setState(() {});
+                      onChanged: (value) {
+                        _viewModel.setNewPassword(value);
                       },
                       onToggle: () {
                         setState(() {
@@ -336,6 +313,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                       controller: _confirmPasswordController,
                       hintText: 'Konfirmasi password baru',
                       obscureText: !_showConfirmPassword,
+                      onChanged: (value) {
+                        _viewModel.setConfirmPassword(value);
+                      },
                       onToggle: () {
                         setState(() {
                           _showConfirmPassword = !_showConfirmPassword;
@@ -363,17 +343,24 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               const SizedBox(height: 8),
 
               _buildRequirement(
-                isValid: _hasMinLength,
+                isValid: _viewModel.hasMinLength,
                 text: 'Minimal 6 karakter',
               ),
 
               const SizedBox(height: 7),
 
-              _buildRequirement(isValid: _hasLetter, text: 'Mengandung huruf'),
+              _buildRequirement(
+                isValid: _viewModel.hasLetter,
+                text: 'Mengandung huruf',
+              ),
 
               const SizedBox(height: 7),
 
-              _buildRequirement(isValid: _hasNumber, text: 'Mengandung angka'),
+              _buildRequirement(
+                isValid: _viewModel.hasNumber,
+                text: 'Mengandung angka',
+              ),
+
               const SizedBox(height: 46),
 
               // ==========================================
@@ -382,8 +369,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 52,
+
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _ubahPassword,
+                  onPressed: _viewModel.isLoading ? null : _ubahPassword,
 
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF28C28),
@@ -395,10 +383,11 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                     ),
                   ),
 
-                  child: _isLoading
+                  child: _viewModel.isLoading
                       ? const SizedBox(
                           width: 20,
                           height: 20,
+
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
                             color: Colors.white,
@@ -429,6 +418,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   Widget _buildPasswordLabel(String label) {
     return Text(
       label,
+
       style: const TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w500,
@@ -450,7 +440,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   }) {
     return TextField(
       controller: controller,
+
       obscureText: obscureText,
+
       onChanged: onChanged,
 
       decoration: InputDecoration(
@@ -465,12 +457,15 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
             obscureText
                 ? Icons.visibility_off_outlined
                 : Icons.visibility_outlined,
+
             color: const Color(0xFF777777),
+
             size: 21,
           ),
         ),
 
         filled: true,
+
         fillColor: Colors.white,
 
         contentPadding: const EdgeInsets.symmetric(
@@ -509,13 +504,18 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
         Container(
           width: 16,
           height: 16,
+
           decoration: BoxDecoration(
             color: isValid ? const Color(0xFFE5F7EF) : const Color(0xFFFFF3E7),
+
             shape: BoxShape.circle,
           ),
+
           child: Icon(
             isValid ? Icons.check_rounded : Icons.circle,
+
             size: 10,
+
             color: isValid ? Colors.green : const Color(0xFFF28C28),
           ),
         ),
@@ -524,8 +524,10 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
 
         Text(
           text,
+
           style: TextStyle(
             fontSize: 13,
+
             color: isValid ? const Color(0xFF555555) : const Color(0xFF777777),
           ),
         ),

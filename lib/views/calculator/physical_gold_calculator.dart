@@ -3,18 +3,37 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../viewmodels/history_viewmodel.dart';
+import '../../viewmodels/physical_gold_calculator_viewmodel.dart';
 import 'physical_gold_result.dart';
 
-class PhysicalGoldCalculator extends StatefulWidget {
+class PhysicalGoldCalculator extends StatelessWidget {
   final VoidCallback? onBack;
 
   const PhysicalGoldCalculator({super.key, this.onBack});
 
   @override
-  State<PhysicalGoldCalculator> createState() => _PhysicalGoldCalculatorState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => PhysicalGoldCalculatorViewModel(
+        historyViewModel: context.read<HistoryViewModel>(),
+      ),
+      child: _PhysicalGoldCalculatorContent(onBack: onBack),
+    );
+  }
 }
 
-class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
+class _PhysicalGoldCalculatorContent extends StatefulWidget {
+  final VoidCallback? onBack;
+
+  const _PhysicalGoldCalculatorContent({this.onBack});
+
+  @override
+  State<_PhysicalGoldCalculatorContent> createState() =>
+      _PhysicalGoldCalculatorContentState();
+}
+
+class _PhysicalGoldCalculatorContentState
+    extends State<_PhysicalGoldCalculatorContent> {
   // ==================================================
   // FORM KEY
   // ==================================================
@@ -26,8 +45,11 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
   // ==================================================
 
   final TextEditingController _modalController = TextEditingController();
+
   final TextEditingController _kursController = TextEditingController();
+
   final TextEditingController _hargaBeliController = TextEditingController();
+
   final TextEditingController _hargaJualController = TextEditingController();
 
   // ==================================================
@@ -96,90 +118,37 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
     final double hargaJual = double.parse(_hargaJualController.text.trim());
 
     // ================================================
-    // TOZ
+    // AMBIL VIEWMODEL
     // ================================================
 
-    const double toz = 31.1;
+    final viewModel = context.read<PhysicalGoldCalculatorViewModel>();
 
     // ================================================
-    // LANGKAH 1
-    //
-    // Harga Beli × Kurs ÷ Toz
-    //
-    // Desimal dibuang tanpa pembulatan.
+    // HITUNG DAN SIMPAN HISTORY
     // ================================================
 
-    final double hasilHargaBeli = ((hargaBeli * kurs) / toz).floorToDouble();
-
-    // ================================================
-    // LANGKAH 2
-    //
-    // Harga Jual × Kurs ÷ Toz
-    //
-    // Desimal dibuang tanpa pembulatan.
-    // ================================================
-
-    final double hasilHargaJual = ((hargaJual * kurs) / toz).floorToDouble();
-
-    // ================================================
-    // LANGKAH 3
-    //
-    // Hasil harga jual - hasil harga beli
-    //
-    // Tidak dilakukan pembulatan.
-    // ================================================
-
-    final double selisihHarga = hasilHargaJual - hasilHargaBeli;
-
-    // ================================================
-    // LANGKAH 4
-    //
-    // Modal ÷ hasil harga beli
-    //
-    // Hanya mengambil 2 angka di belakang koma.
-    // Tidak dibulatkan.
-    //
-    // Contoh:
-    // 9,7189 → 9,71
-    // 9,7265 → 9,72
-    // ================================================
-
-    final double jumlahEmas = ((modal / hasilHargaBeli) * 100).floor() / 100;
-
-    // ================================================
-    // LANGKAH 5
-    //
-    // Hasil langkah 3 × hasil langkah 4
-    //
-    // Angka di belakang koma dibuang.
-    // Tidak dibulatkan.
-    // ================================================
-
-    final double keuntungan = (selisihHarga * jumlahEmas).floorToDouble();
-
-    // ================================================
-    // SIMPAN HISTORY
-    // ================================================
-
-    final historySaved = await context.read<HistoryViewModel>().saveHistory(
-      calculatorType: 'physical_gold',
-      inputData: {
-        'modal': modal,
-        'kurs': kurs,
-        'harga_beli': hargaBeli,
-        'harga_jual': hargaJual,
-      },
-      resultData: {
-        'toz': toz,
-        'hasil_harga_beli': hasilHargaBeli,
-        'hasil_harga_jual': hasilHargaJual,
-        'selisih_harga': selisihHarga,
-        'jumlah_emas': jumlahEmas,
-        'keuntungan': keuntungan,
-      },
+    final result = await viewModel.hitung(
+      modal: modal,
+      kurs: kurs,
+      hargaBeli: hargaBeli,
+      hargaJual: hargaJual,
     );
 
-    if (!historySaved) {
+    if (!mounted) {
+      return;
+    }
+
+    // ================================================
+    // JIKA HISTORY GAGAL DISIMPAN
+    // ================================================
+
+    if (result == null) {
+      if (viewModel.errorMessage != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(viewModel.errorMessage!)));
+      }
+
       return;
     }
 
@@ -191,15 +160,15 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
       context,
       MaterialPageRoute(
         builder: (context) => PhysicalGoldResult(
-          modal: modal,
-          kurs: kurs,
-          hargaBeli: hargaBeli,
-          hargaJual: hargaJual,
-          hasilHargaBeli: hasilHargaBeli,
-          hasilHargaJual: hasilHargaJual,
-          selisihHarga: selisihHarga,
-          jumlahEmas: jumlahEmas,
-          keuntungan: keuntungan,
+          modal: result.modal,
+          kurs: result.kurs,
+          hargaBeli: result.hargaBeli,
+          hargaJual: result.hargaJual,
+          hasilHargaBeli: result.hasilHargaBeli,
+          hasilHargaJual: result.hasilHargaJual,
+          selisihHarga: result.selisihHarga,
+          jumlahEmas: result.jumlahEmas,
+          keuntungan: result.keuntungan,
         ),
       ),
     );
@@ -274,20 +243,16 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-
           child: Form(
             key: _formKey,
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
                 // ==========================================
                 // TITLE
                 // ==========================================
                 const Text(
                   'Hitung Emas Fisik',
-
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -300,7 +265,6 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
                 const Text(
                   'Masukkan data transaksi emas fisik '
                   'untuk menghitung keuntungan atau kerugian.',
-
                   style: TextStyle(
                     fontSize: 14,
                     color: Color(0xFF777777),
@@ -386,31 +350,23 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
                 SizedBox(
                   width: double.infinity,
                   height: 54,
-
                   child: ElevatedButton(
                     onPressed: _hitung,
-
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF28C28),
                       foregroundColor: Colors.white,
                       elevation: 0,
-
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-
                       children: [
                         Icon(Icons.calculate_outlined, size: 21),
-
                         SizedBox(width: 10),
-
                         Text(
                           'Hitung',
-
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -437,7 +393,6 @@ class _PhysicalGoldCalculatorState extends State<PhysicalGoldCalculator> {
   Widget _buildInputLabel(String label) {
     return Text(
       label,
-
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,

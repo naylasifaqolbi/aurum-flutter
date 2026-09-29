@@ -1,8 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'dart:io';
+import '../../viewmodels/edit_profile_viewmodel.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -20,70 +21,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   final TextEditingController _phoneController = TextEditingController();
 
-  XFile? _imageFile;
-  String? _avatarUrl;
+  late final EditProfileViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
+
+    _viewModel = EditProfileViewModel();
+
+    _viewModel.addListener(_onViewModelChanged);
+
     _loadProfile();
   }
 
   // ==========================================
-  // LOAD PROFILE DARI SUPABASE
+  // LOAD PROFILE
   // ==========================================
+
   Future<void> _loadProfile() async {
-    final user = Supabase.instance.client.auth.currentUser;
+    await _viewModel.loadProfile();
 
-    if (user == null) return;
+    if (!mounted) return;
 
-    try {
-      final profile = await Supabase.instance.client
-          .from('profiles')
-          .select('name, phone, avatar_url')
-          .eq('id', user.id)
-          .single();
+    _namaController.text = _viewModel.nama;
+    _emailController.text = _viewModel.email;
+    _phoneController.text = _viewModel.phone;
+  }
 
-      if (!mounted) return;
+  // ==========================================
+  // UPDATE UI SAAT VIEWMODEL BERUBAH
+  // ==========================================
 
-      setState(() {
-        _namaController.text = profile['name'] ?? '';
-        _phoneController.text = profile['phone'] ?? '';
-        _emailController.text = user.email ?? '';
-        _avatarUrl = profile['avatar_url'] ?? '';
-      });
-    } catch (error) {
-      if (!mounted) return;
+  void _onViewModelChanged() {
+    if (!mounted) return;
 
-      setState(() {
-        _emailController.text = user.email ?? '';
-      });
-    }
+    setState(() {});
   }
 
   // ==========================================
   // PILIH FOTO PROFIL
   // ==========================================
+
   Future<void> _pilihFoto(ImageSource source) async {
-    final ImagePicker picker = ImagePicker();
-
-    final XFile? pickedFile = await picker.pickImage(
-      source: source,
-      imageQuality: 80,
-    );
-
-    if (pickedFile == null) return;
-
-    if (!mounted) return;
-
-    setState(() {
-      _imageFile = pickedFile;
-    });
+    await _viewModel.pilihFoto(source);
   }
 
   // ==========================================
   // PILIH SUMBER FOTO
   // ==========================================
+
   void _showPhotoOptions() {
     showModalBottomSheet(
       context: context,
@@ -117,6 +103,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   title: const Text('Kamera'),
                   onTap: () {
                     Navigator.pop(context);
+
                     _pilihFoto(ImageSource.camera);
                   },
                 ),
@@ -129,6 +116,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   title: const Text('Galeri'),
                   onTap: () {
                     Navigator.pop(context);
+
                     _pilihFoto(ImageSource.gallery);
                   },
                 ),
@@ -145,85 +133,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _namaController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+
+    _viewModel.removeListener(_onViewModelChanged);
+    _viewModel.dispose();
+
     super.dispose();
   }
+
+  // ==========================================
+  // SIMPAN PROFIL
+  // ==========================================
 
   Future<void> _simpanProfil() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final user = Supabase.instance.client.auth.currentUser;
+    final bool success = await _viewModel.simpanProfil(
+      nama: _namaController.text,
+      phone: _phoneController.text,
+    );
 
-    if (user == null) return;
+    if (!mounted) return;
 
-    try {
-      String? avatarUrl;
-
-      // ==========================================
-      // UPLOAD FOTO PROFIL
-      // ==========================================
-      if (_imageFile != null) {
-        final file = File(_imageFile!.path);
-
-        final extension = _imageFile!.path.split('.').last.toLowerCase();
-
-        final filePath = '${user.id}/avatar.$extension';
-
-        await Supabase.instance.client.storage
-            .from('profile-avatars')
-            .upload(
-              filePath,
-              file,
-              fileOptions: const FileOptions(upsert: true),
-            );
-
-        avatarUrl = Supabase.instance.client.storage
-            .from('profile-avatars')
-            .getPublicUrl(filePath);
-      }
-
-      // ==========================================
-      // SIMPAN DATA PROFIL
-      // ==========================================
-      final updateData = {
-        'name': _namaController.text.trim(),
-        'phone': _phoneController.text.trim(),
-      };
-
-      if (avatarUrl != null) {
-        updateData['avatar_url'] = avatarUrl;
-      }
-
-      await Supabase.instance.client
-          .from('profiles')
-          .update(updateData)
-          .eq('id', user.id);
-
-      if (!mounted) return;
-
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profil berhasil diperbarui.')),
       );
 
       Navigator.pop(context);
-    } on StorageException catch (error) {
-      if (!mounted) return;
-
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengunggah foto: ${error.message}')),
-      );
-    } on PostgrestException catch (error) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
-    } catch (error) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Terjadi kesalahan. Silakan coba lagi.')),
+        SnackBar(
+          content: Text(
+            _viewModel.errorMessage ?? 'Terjadi kesalahan. Silakan coba lagi.',
+          ),
+        ),
       );
     }
   }
@@ -247,7 +192,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           onPressed: () {
             Navigator.pop(context);
           },
-
           icon: const Icon(
             Icons.arrow_back_rounded,
             color: Color(0xFF3D2B1F),
@@ -270,18 +214,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       ),
 
+      // ==========================================
+      // BODY
+      // ==========================================
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-
           padding: const EdgeInsets.fromLTRB(24, 22, 24, 30),
-
           child: Form(
             key: _formKey,
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
                 // ==========================================
                 // FOTO PROFIL
@@ -291,34 +234,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     children: [
                       Stack(
                         clipBehavior: Clip.none,
-
                         children: [
-                          // FOTO
                           GestureDetector(
                             onTap: _showPhotoOptions,
-
                             child: Container(
                               width: 96,
                               height: 96,
-
                               decoration: const BoxDecoration(
                                 color: Color(0xFFFFE5CC),
                                 shape: BoxShape.circle,
                               ),
-
-                              child: _imageFile != null
+                              child: _viewModel.imageFile != null
                                   ? ClipOval(
                                       child: Image.file(
-                                        File(_imageFile!.path),
+                                        File(_viewModel.imageFile!.path),
                                         width: 96,
                                         height: 96,
                                         fit: BoxFit.cover,
                                       ),
                                     )
-                                  : _avatarUrl != null && _avatarUrl!.isNotEmpty
+                                  : _viewModel.avatarUrl != null &&
+                                        _viewModel.avatarUrl!.isNotEmpty
                                   ? ClipOval(
                                       child: Image.network(
-                                        '${_avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}',
+                                        '${_viewModel.avatarUrl!}?t=${DateTime.now().millisecondsSinceEpoch}',
                                         width: 96,
                                         height: 96,
                                         fit: BoxFit.cover,
@@ -336,19 +275,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           Positioned(
                             right: -2,
                             bottom: -2,
-
                             child: GestureDetector(
                               onTap: _showPhotoOptions,
-
                               child: Container(
                                 width: 30,
                                 height: 30,
-
                                 decoration: const BoxDecoration(
                                   color: Color(0xFF3D2B1F),
                                   shape: BoxShape.circle,
                                 ),
-
                                 child: const Icon(
                                   Icons.camera_alt_rounded,
                                   size: 16,
@@ -381,24 +316,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 // ==========================================
                 Container(
                   width: double.infinity,
-
                   padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
-
                   decoration: BoxDecoration(
                     color: Colors.white,
-
                     borderRadius: BorderRadius.circular(18),
-
                     border: Border.all(color: const Color(0xFFE8DDD4)),
                   ),
-
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-
                     children: [
-                      // ======================================
                       // NAMA
-                      // ======================================
                       _buildLabel('Nama Lengkap'),
 
                       const SizedBox(height: 8),
@@ -411,9 +338,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                       const SizedBox(height: 20),
 
-                      // ======================================
                       // EMAIL
-                      // ======================================
                       _buildLabel('Email'),
 
                       const SizedBox(height: 8),
@@ -428,9 +353,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                       const SizedBox(height: 20),
 
-                      // ======================================
                       // NOMOR TELEPON
-                      // ======================================
                       _buildLabel('Nomor Telepon'),
 
                       const SizedBox(height: 8),
@@ -453,20 +376,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 52,
-
                   child: ElevatedButton(
                     onPressed: _simpanProfil,
-
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF28C28),
                       foregroundColor: Colors.white,
                       elevation: 0,
-
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-
                     child: const Text(
                       'Simpan Perubahan',
                       style: TextStyle(
@@ -493,7 +412,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildLabel(String label) {
     return Text(
       label,
-
       style: const TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w500,
@@ -515,9 +433,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }) {
     return TextFormField(
       controller: controller,
-
       readOnly: readOnly,
-
       keyboardType: keyboardType,
 
       validator: (value) {
@@ -541,19 +457,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-
           borderSide: const BorderSide(color: Color(0xFFE8DDD4)),
         ),
 
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-
           borderSide: const BorderSide(color: Color(0xFFE8DDD4)),
         ),
 
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-
           borderSide: const BorderSide(color: Color(0xFFF28C28), width: 1.5),
         ),
 

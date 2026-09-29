@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
+import 'package:provider/provider.dart';
 
-import '../../models/history_model.dart';
-import '../../services/pdf_service.dart';
+import '../../models/physical_gold_result_model.dart';
+import '../../viewmodels/physical_gold_result_viewmodel.dart';
 
 class PhysicalGoldResult extends StatelessWidget {
   final double modal;
@@ -49,50 +49,68 @@ class PhysicalGoldResult extends StatelessWidget {
   }
 
   // ==================================================
+  // BUILD
+  // ==================================================
+
+  @override
+  Widget build(BuildContext context) {
+    final PhysicalGoldResultModel resultModel = PhysicalGoldResultModel(
+      modal: modal,
+      kurs: kurs,
+      hargaBeli: hargaBeli,
+      hargaJual: hargaJual,
+      hasilHargaBeli: hasilHargaBeli,
+      hasilHargaJual: hasilHargaJual,
+      selisihHarga: selisihHarga,
+      jumlahEmas: jumlahEmas,
+      keuntungan: keuntungan,
+    );
+
+    return ChangeNotifierProvider(
+      create: (_) => PhysicalGoldResultViewModel(resultModel: resultModel),
+      child: _PhysicalGoldResultView(
+        resultModel: resultModel,
+        formatNumber: _formatNumber,
+        formatRupiah: _formatRupiah,
+      ),
+    );
+  }
+}
+
+// ============================================================
+// VIEW CONTENT
+// ============================================================
+
+class _PhysicalGoldResultView extends StatelessWidget {
+  final PhysicalGoldResultModel resultModel;
+
+  final String Function(double) formatNumber;
+  final String Function(double) formatRupiah;
+
+  const _PhysicalGoldResultView({
+    required this.resultModel,
+    required this.formatNumber,
+    required this.formatRupiah,
+  });
+
+  // ==================================================
   // DOWNLOAD PDF HASIL PERHITUNGAN
   // ==================================================
 
   Future<void> _downloadResult(BuildContext context) async {
-    try {
-      final history = HistoryModel(
-        id: '',
-        userId: '',
-        calculatorType: 'physical_gold',
-        createdAt: DateTime.now(),
-        inputData: {
-          'modal': modal,
-          'kurs': kurs,
-          'harga_beli': hargaBeli,
-          'harga_jual': hargaJual,
-        },
-        resultData: {
-          'toz': 31.1,
-          'hasil_harga_beli': hasilHargaBeli,
-          'hasil_harga_jual': hasilHargaJual,
-          'selisih_harga': selisihHarga,
-          'jumlah_emas': jumlahEmas,
-          'keuntungan': keuntungan,
-        },
-      );
+    final viewModel = context.read<PhysicalGoldResultViewModel>();
 
-      final pdfService = PdfService();
+    final bool success = await viewModel.downloadResult();
 
-      final pdfBytes = await pdfService.generatePhysicalGoldPdf(history);
+    if (!context.mounted) {
+      return;
+    }
 
-      await Printing.sharePdf(
-        bytes: pdfBytes,
-        filename: 'hasil_emas_fisik.pdf',
-      );
-    } catch (e) {
-      if (!context.mounted) {
-        return;
-      }
+    if (!success) {
+      final String message = viewModel.errorMessage ?? 'Gagal membuat PDF.';
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal membuat PDF: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     }
   }
@@ -103,7 +121,11 @@ class PhysicalGoldResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isProfit = keuntungan >= 0;
+    final bool isProfit = resultModel.keuntungan >= 0;
+
+    final bool isGeneratingPdf = context
+        .watch<PhysicalGoldResultViewModel>()
+        .isGeneratingPdf;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F0),
@@ -213,7 +235,7 @@ class PhysicalGoldResult extends StatelessWidget {
                     const SizedBox(height: 6),
 
                     Text(
-                      _formatRupiah(keuntungan.abs()),
+                      formatRupiah(resultModel.keuntungan.abs()),
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -258,7 +280,7 @@ class PhysicalGoldResult extends StatelessWidget {
                     _buildResultItem(
                       icon: Icons.account_balance_wallet_outlined,
                       title: 'Modal',
-                      value: _formatRupiah(modal),
+                      value: formatRupiah(resultModel.modal),
                     ),
 
                     const Divider(height: 1, indent: 20, endIndent: 20),
@@ -266,7 +288,7 @@ class PhysicalGoldResult extends StatelessWidget {
                     _buildResultItem(
                       icon: Icons.currency_exchange_rounded,
                       title: 'Kurs',
-                      value: _formatRupiah(kurs),
+                      value: formatRupiah(resultModel.kurs),
                     ),
 
                     const Divider(height: 1, indent: 20, endIndent: 20),
@@ -274,7 +296,7 @@ class PhysicalGoldResult extends StatelessWidget {
                     _buildResultItem(
                       icon: Icons.shopping_cart_outlined,
                       title: 'Harga Beli',
-                      value: _formatNumber(hargaBeli),
+                      value: formatNumber(resultModel.hargaBeli),
                     ),
 
                     const Divider(height: 1, indent: 20, endIndent: 20),
@@ -282,7 +304,7 @@ class PhysicalGoldResult extends StatelessWidget {
                     _buildResultItem(
                       icon: Icons.sell_outlined,
                       title: 'Harga Jual',
-                      value: _formatNumber(hargaJual),
+                      value: formatNumber(resultModel.hargaJual),
                     ),
                   ],
                 ),
@@ -325,9 +347,9 @@ class PhysicalGoldResult extends StatelessWidget {
                       number: '1',
                       title: 'Harga Beli × Kurs ÷ Toz',
                       formula:
-                          '${_formatNumber(hargaBeli)} × '
-                          '${_formatNumber(kurs)} ÷ 31.1',
-                      result: _formatNumber(hasilHargaBeli),
+                          '${formatNumber(resultModel.hargaBeli)} × '
+                          '${formatNumber(resultModel.kurs)} ÷ 31.1',
+                      result: formatNumber(resultModel.hasilHargaBeli),
                     ),
 
                     const SizedBox(height: 18),
@@ -336,9 +358,9 @@ class PhysicalGoldResult extends StatelessWidget {
                       number: '2',
                       title: 'Harga Jual × Kurs ÷ Toz',
                       formula:
-                          '${_formatNumber(hargaJual)} × '
-                          '${_formatNumber(kurs)} ÷ 31.1',
-                      result: _formatNumber(hasilHargaJual),
+                          '${formatNumber(resultModel.hargaJual)} × '
+                          '${formatNumber(resultModel.kurs)} ÷ 31.1',
+                      result: formatNumber(resultModel.hasilHargaJual),
                     ),
 
                     const SizedBox(height: 18),
@@ -347,9 +369,9 @@ class PhysicalGoldResult extends StatelessWidget {
                       number: '3',
                       title: 'Hasil Harga Jual − Hasil Harga Beli',
                       formula:
-                          '${_formatNumber(hasilHargaJual)} − '
-                          '${_formatNumber(hasilHargaBeli)}',
-                      result: _formatNumber(selisihHarga),
+                          '${formatNumber(resultModel.hasilHargaJual)} − '
+                          '${formatNumber(resultModel.hasilHargaBeli)}',
+                      result: formatNumber(resultModel.selisihHarga),
                     ),
 
                     const SizedBox(height: 18),
@@ -358,9 +380,9 @@ class PhysicalGoldResult extends StatelessWidget {
                       number: '4',
                       title: 'Modal ÷ Hasil Harga Jual',
                       formula:
-                          '${_formatNumber(modal)} ÷ '
-                          '${_formatNumber(hasilHargaJual)}',
-                      result: _formatNumber(jumlahEmas),
+                          '${formatNumber(resultModel.modal)} ÷ '
+                          '${formatNumber(resultModel.hasilHargaJual)}',
+                      result: formatNumber(resultModel.jumlahEmas),
                     ),
 
                     const SizedBox(height: 18),
@@ -369,9 +391,9 @@ class PhysicalGoldResult extends StatelessWidget {
                       number: '5',
                       title: 'Selisih Harga × Jumlah Emas',
                       formula:
-                          '${_formatNumber(selisihHarga)} × '
-                          '${_formatNumber(jumlahEmas)}',
-                      result: _formatRupiah(keuntungan),
+                          '${formatNumber(resultModel.selisihHarga)} × '
+                          '${formatNumber(resultModel.jumlahEmas)}',
+                      result: formatRupiah(resultModel.keuntungan),
                       resultColor: isProfit
                           ? const Color(0xFFF28C28)
                           : Colors.red,
@@ -416,13 +438,29 @@ class PhysicalGoldResult extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    _downloadResult(context);
-                  },
-                  icon: const Icon(Icons.download_rounded, size: 20),
-                  label: const Text(
-                    'Unduh Hasil Perhitungan',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  onPressed: isGeneratingPdf
+                      ? null
+                      : () {
+                          _downloadResult(context);
+                        },
+                  icon: isGeneratingPdf
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.download_rounded, size: 20),
+                  label: Text(
+                    isGeneratingPdf
+                        ? 'Membuat PDF...'
+                        : 'Unduh Hasil Perhitungan',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF28C28),

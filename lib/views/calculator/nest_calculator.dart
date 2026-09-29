@@ -1,77 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import '../../services/historical_api_service.dart';
-import '../../viewmodels/history_viewmodel.dart';
 import 'package:provider/provider.dart';
+
+import '../../models/nest_calculator_model.dart';
+import '../../viewmodels/history_viewmodel.dart';
+import '../../viewmodels/nest_calculator_viewmodel.dart';
 import 'nest_result.dart';
 
-class NestCalculatorScreen extends StatefulWidget {
+class NestCalculatorScreen extends StatelessWidget {
   final VoidCallback? onBack;
 
   const NestCalculatorScreen({super.key, this.onBack});
 
   @override
-  State<NestCalculatorScreen> createState() => _NestCalculatorScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => NestCalculatorViewModel(
+        historyViewModel: context.read<HistoryViewModel>(),
+      ),
+      child: _NestCalculatorView(onBack: onBack),
+    );
+  }
 }
 
-class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
+class _NestCalculatorView extends StatefulWidget {
+  final VoidCallback? onBack;
+
+  const _NestCalculatorView({this.onBack});
+
+  @override
+  State<_NestCalculatorView> createState() => _NestCalculatorViewState();
+}
+
+class _NestCalculatorViewState extends State<_NestCalculatorView> {
+  // ============================================================
+  // FORM KEY
+  // ============================================================
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  // ============================================================
+  // CONTROLLER INPUT
+  // ============================================================
 
   final TextEditingController _openController = TextEditingController();
 
   final TextEditingController _closeController = TextEditingController();
 
-  bool _isLoadingHistorical = true;
+  // ============================================================
+  // INIT
+  // ============================================================
 
   @override
   void initState() {
     super.initState();
 
-    _loadLatestHistoricalData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadLatestHistoricalData();
+    });
   }
+
+  // ============================================================
+  // LOAD DATA HISTORICAL TERBARU
+  // ============================================================
 
   Future<void> _loadLatestHistoricalData() async {
-    try {
-      final result = await HistoricalApiService.getHistoricalData(
-        category: 'LGD Daily',
-        page: 1,
-        limit: 10,
-      );
+    final viewModel = context.read<NestCalculatorViewModel>();
 
-      final dynamic rawData = result['data'];
+    final String? close = await viewModel.loadLatestHistoricalData();
 
-      if (rawData is List && rawData.isNotEmpty) {
-        final dynamic latest = rawData.first;
-
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {
-          _closeController.text = latest['close']?.toString() ?? '';
-
-          _isLoadingHistorical = false;
-        });
-      } else {
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {
-          _isLoadingHistorical = false;
-        });
-      }
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isLoadingHistorical = false;
-      });
+    if (!mounted || close == null) {
+      return;
     }
+
+    // ==========================================================
+    // HARGA OPEN TIDAK DIISI OTOMATIS
+    // Harga Open tetap diketik manual oleh pengguna.
+    // ==========================================================
+
+    // ==========================================================
+    // HARGA CLOSE DIISI OTOMATIS
+    // ==========================================================
+
+    _closeController.text = close;
   }
+
+  // ============================================================
+  // DISPOSE
+  // ============================================================
 
   @override
   void dispose() {
@@ -81,10 +97,22 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
     super.dispose();
   }
 
+  // ============================================================
+  // HITUNG NEST
+  // ============================================================
+
   Future<void> _hitung() async {
+    // ==========================================================
+    // VALIDASI FORM
+    // ==========================================================
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    // ==========================================================
+    // KONVERSI INPUT MENJADI DOUBLE
+    // ==========================================================
 
     final double open = double.parse(
       _openController.text.trim().replaceAll(',', '.'),
@@ -94,42 +122,38 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
       _closeController.text.trim().replaceAll(',', '.'),
     );
 
-    String indication;
-    String description;
+    // ==========================================================
+    // HITUNG DAN SIMPAN MELALUI VIEWMODEL
+    // ==========================================================
 
-    if (close > open) {
-      indication = 'BUY';
-      description = 'Harga Close berada di atas harga Open.';
-    } else if (close < open) {
-      indication = 'SELL';
-      description = 'Harga Close berada di bawah harga Open.';
-    } else {
-      indication = 'NETRAL';
-      description = 'Harga Close sama dengan harga Open.';
-    }
+    final NestCalculatorModel? result = await context
+        .read<NestCalculatorViewModel>()
+        .hitungDanSimpan(open: open, close: close);
 
-    final historySaved = await context.read<HistoryViewModel>().saveHistory(
-      calculatorType: 'nest',
-      inputData: {'open': open, 'close': close},
-      resultData: {'indication': indication, 'description': description},
-    );
-
-    if (!historySaved) {
+    if (!mounted || result == null) {
       return;
     }
+
+    // ==========================================================
+    // PINDAH KE HALAMAN HASIL
+    // ==========================================================
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => NestResult(
-          open: open,
-          close: close,
-          indication: indication,
-          description: description,
+          open: result.open,
+          close: result.close,
+          indication: result.indication,
+          description: result.description,
         ),
       ),
     );
   }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -185,6 +209,9 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
         ),
       ),
 
+      // ==========================================================
+      // BODY
+      // ==========================================================
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -194,6 +221,9 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ==================================================
+                // TITLE
+                // ==================================================
                 const Text(
                   'Indikator Nest',
                   style: TextStyle(
@@ -202,7 +232,9 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
                     color: Color(0xFF222222),
                   ),
                 ),
+
                 const SizedBox(height: 8),
+
                 const Text(
                   'Masukkan harga Open secara manual. '
                   'Harga Close diambil otomatis dari data historical. '
@@ -214,9 +246,16 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
                     height: 1.5,
                   ),
                 ),
+
                 const SizedBox(height: 30),
+
+                // ==================================================
+                // OPEN
+                // ==================================================
                 _buildInputLabel('Harga Open'),
+
                 const SizedBox(height: 8),
+
                 _buildInputField(
                   controller: _openController,
                   hintText: 'Masukkan harga open',
@@ -224,9 +263,16 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
                   errorMessage: 'Harga Open wajib diisi',
                   showLoading: false,
                 ),
+
                 const SizedBox(height: 20),
+
+                // ==================================================
+                // CLOSE
+                // ==================================================
                 _buildInputLabel('Harga Close'),
+
                 const SizedBox(height: 8),
+
                 _buildInputField(
                   controller: _closeController,
                   hintText: 'Masukkan harga close',
@@ -234,7 +280,12 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
                   errorMessage: 'Harga Close wajib diisi',
                   showLoading: true,
                 ),
+
                 const SizedBox(height: 32),
+
+                // ==================================================
+                // BUTTON HITUNG
+                // ==================================================
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -264,6 +315,7 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 30),
               ],
             ),
@@ -272,6 +324,10 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
       ),
     );
   }
+
+  // ============================================================
+  // LABEL INPUT
+  // ============================================================
 
   Widget _buildInputLabel(String label) {
     return Text(
@@ -284,6 +340,10 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
     );
   }
 
+  // ============================================================
+  // INPUT FIELD
+  // ============================================================
+
   Widget _buildInputField({
     required TextEditingController controller,
     required String hintText,
@@ -291,12 +351,19 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
     required String errorMessage,
     bool showLoading = true,
   }) {
-    final bool isLoading = showLoading && _isLoadingHistorical;
+    final bool isLoading =
+        showLoading &&
+        context.watch<NestCalculatorViewModel>().isLoadingHistorical;
 
     return TextFormField(
       controller: controller,
+
+      // Harga Open tidak loading sehingga tetap bisa diketik.
+      // Harga Close readOnly saat proses loading.
       readOnly: isLoading,
+
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return errorMessage;
@@ -316,34 +383,44 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
 
         return null;
       },
+
       decoration: InputDecoration(
         hintText: isLoading ? 'Memuat data...' : hintText,
+
         hintStyle: const TextStyle(color: Color(0xFF888888), fontSize: 14),
+
         prefixIcon: isLoading
             ? const SizedBox(width: 50, child: Center(child: _LoadingArrow()))
             : Icon(icon, color: const Color(0xFFF28C28)),
+
         filled: true,
         fillColor: Colors.white,
+
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFFE8E8E8)),
         ),
+
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFFE8E8E8)),
         ),
+
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFFF28C28), width: 1.5),
         ),
+
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Colors.red),
         ),
+
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Colors.red, width: 1.5),
         ),
+
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
@@ -352,6 +429,10 @@ class _NestCalculatorScreenState extends State<NestCalculatorScreen> {
     );
   }
 }
+
+// ============================================================
+// LOADING ARROW
+// ============================================================
 
 class _LoadingArrow extends StatefulWidget {
   const _LoadingArrow();

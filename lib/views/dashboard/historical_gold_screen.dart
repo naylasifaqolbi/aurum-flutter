@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../services/historical_api_service.dart';
+import '../../models/historical_gold_model.dart';
+import '../../viewmodels/historical_gold_viewmodel.dart';
 
 class HistoricalGoldScreen extends StatefulWidget {
   const HistoricalGoldScreen({super.key});
@@ -27,60 +28,10 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
   static const Color lightOrange = Color(0xFFFFE5CC);
 
   // ============================================================
-  // CATEGORY
+  // VIEWMODEL
   // ============================================================
 
-  static const List<String> _categories = [
-    'LGD Daily',
-    'HSI Daily',
-    'SNI Daily',
-  ];
-
-  String _selectedCategory = HistoricalApiService.defaultCategory;
-
-  // ============================================================
-  // DATE
-  // ============================================================
-
-  DateTime? _startDate;
-
-  DateTime? _endDate;
-
-  // ============================================================
-  // DATA
-  // ============================================================
-
-  List<Map<String, String>> _historicalData = [];
-
-  // ============================================================
-  // LOADING / ERROR
-  // ============================================================
-
-  bool _isLoading = false;
-
-  String? _errorMessage;
-
-  // ============================================================
-  // CACHE STATUS
-  // ============================================================
-
-  bool _isFromCache = false;
-
-  String? _cacheTime;
-
-  // ============================================================
-  // REQUEST LOCK
-  // ============================================================
-
-  bool _requestRunning = false;
-
-  // ============================================================
-  // PAGINATION
-  // ============================================================
-
-  int _currentPage = 1;
-
-  int _totalPages = 1;
+  final HistoricalGoldViewModel _viewModel = HistoricalGoldViewModel();
 
   // ============================================================
   // AUTO REFRESH
@@ -98,7 +49,9 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
 
     WidgetsBinding.instance.addObserver(this);
 
-    _loadHistoricalData(showLoading: true);
+    _viewModel.addListener(_onViewModelChanged);
+
+    _viewModel.loadHistoricalData(showLoading: true);
 
     // ==========================================================
     // AUTO REFRESH 5 MENIT
@@ -106,9 +59,21 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
 
     _autoRefreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
       if (mounted) {
-        _loadHistoricalData(showLoading: false);
+        _viewModel.loadHistoricalData(showLoading: false);
       }
     });
+  }
+
+  // ============================================================
+  // VIEWMODEL LISTENER
+  // ============================================================
+
+  void _onViewModelChanged() {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
   }
 
   // ============================================================
@@ -120,7 +85,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
     super.didChangeAppLifecycleState(state);
 
     if (state == AppLifecycleState.resumed) {
-      _loadHistoricalData(showLoading: false);
+      _viewModel.loadHistoricalData(showLoading: false);
     }
   }
 
@@ -134,191 +99,11 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
 
     _autoRefreshTimer?.cancel();
 
+    _viewModel.removeListener(_onViewModelChanged);
+
+    _viewModel.dispose();
+
     super.dispose();
-  }
-
-  // ============================================================
-  // LOAD HISTORICAL DATA
-  // ============================================================
-
-  Future<void> _loadHistoricalData({bool showLoading = true}) async {
-    // ==========================================================
-    // CEGAH REQUEST DOUBLE
-    // ==========================================================
-
-    if (_requestRunning) {
-      return;
-    }
-
-    _requestRunning = true;
-
-    if (showLoading && mounted) {
-      setState(() {
-        _isLoading = true;
-
-        _errorMessage = null;
-      });
-    }
-
-    try {
-      // ========================================================
-      // TAMPILKAN CACHE TERLEBIH DAHULU
-      // ========================================================
-
-      if (showLoading) {
-        final cached = await HistoricalApiService.getCachedHistoricalData(
-          category: _selectedCategory,
-          startDate: _startDate,
-          endDate: _endDate,
-          page: _currentPage,
-          limit: 10,
-        );
-
-        if (cached != null && mounted) {
-          _applyResult(cached);
-
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
-
-      // ========================================================
-      // REQUEST KE BACKEND
-      // ========================================================
-
-      final result = await HistoricalApiService.getHistoricalData(
-        category: _selectedCategory,
-        startDate: _startDate,
-        endDate: _endDate,
-        page: _currentPage,
-        limit: 10,
-      );
-
-      // ========================================================
-      // APPLY RESULT
-      // ========================================================
-
-      if (mounted) {
-        _applyResult(result);
-
-        setState(() {
-          _isLoading = false;
-
-          _errorMessage = null;
-        });
-      }
-    } catch (error) {
-      // ========================================================
-      // BACKEND OFF
-      // CACHE SUDAH DICOBA OLEH SERVICE
-      // ========================================================
-
-      if (mounted) {
-        if (_historicalData.isEmpty) {
-          setState(() {
-            _errorMessage =
-                'Tidak dapat mengambil data '
-                '$_selectedCategory.\n'
-                'Pastikan backend aktif atau '
-                'tersedia cache offline.';
-          });
-        }
-
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    } finally {
-      _requestRunning = false;
-    }
-  }
-
-  // ============================================================
-  // APPLY RESULT
-  // ============================================================
-
-  void _applyResult(Map<String, dynamic> result) {
-    final dynamic rawData = result['data'];
-
-    final List<Map<String, String>> convertedData = [];
-
-    if (rawData is List) {
-      for (final item in rawData) {
-        if (item is Map) {
-          convertedData.add({
-            'date': item['date']?.toString() ?? '-',
-
-            'open': item['open']?.toString() ?? '-',
-
-            'high': item['high']?.toString() ?? '-',
-
-            'low': item['low']?.toString() ?? '-',
-
-            'close': item['close']?.toString() ?? '-',
-          });
-        }
-      }
-    }
-
-    // ==========================================================
-    // PAGINATION
-    // ==========================================================
-
-    final dynamic pagination = result['pagination'];
-
-    if (pagination is Map) {
-      _currentPage =
-          int.tryParse(pagination['current_page']?.toString() ?? '') ??
-          _currentPage;
-
-      _totalPages =
-          int.tryParse(pagination['total_pages']?.toString() ?? '') ?? 1;
-    }
-
-    // ==========================================================
-    // CACHE STATUS
-    // ==========================================================
-
-    _isFromCache = result['fromCache'] == true;
-
-    _cacheTime = result['cacheTime']?.toString();
-
-    // ==========================================================
-    // DATA
-    // ==========================================================
-
-    _historicalData = convertedData;
-  }
-
-  // ============================================================
-  // CATEGORY CHANGED
-  // ============================================================
-
-  void _onCategoryChanged(String? value) {
-    if (value == null || value == _selectedCategory) {
-      return;
-    }
-
-    setState(() {
-      _selectedCategory = value;
-
-      // Reset pagination
-      _currentPage = 1;
-
-      // Bersihkan data kategori sebelumnya
-      // agar data LGD tidak tampil saat
-      // sedang mengambil HSI / SNI.
-      _historicalData = [];
-
-      _errorMessage = null;
-
-      _isFromCache = false;
-
-      _cacheTime = null;
-    });
-
-    _loadHistoricalData(showLoading: true);
   }
 
   // ============================================================
@@ -326,57 +111,19 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
   // ============================================================
 
   Future<void> _refreshData() async {
-    if (_requestRunning) {
+    if (_viewModel.requestRunning) {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-
-      _errorMessage = null;
-    });
-
-    await _loadHistoricalData(showLoading: false);
+    final bool success = await _viewModel.refreshData();
 
     if (!mounted) {
       return;
     }
 
-    if (_errorMessage == null) {
-      _showMessage('Data $_selectedCategory berhasil diperbarui.');
+    if (success) {
+      _showMessage('Data ${_viewModel.selectedCategory} berhasil diperbarui.');
     }
-  }
-
-  // ============================================================
-  // NEXT PAGE
-  // ============================================================
-
-  void _nextPage() {
-    if (_currentPage >= _totalPages) {
-      return;
-    }
-
-    setState(() {
-      _currentPage++;
-    });
-
-    _loadHistoricalData(showLoading: true);
-  }
-
-  // ============================================================
-  // PREVIOUS PAGE
-  // ============================================================
-
-  void _previousPage() {
-    if (_currentPage <= 1) {
-      return;
-    }
-
-    setState(() {
-      _currentPage--;
-    });
-
-    _loadHistoricalData(showLoading: true);
   }
 
   // ============================================================
@@ -385,18 +132,14 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
 
   Future<void> _selectDate({required bool isStart}) async {
     final DateTime initialDate = isStart
-        ? (_startDate ?? DateTime.now())
-        : (_endDate ?? _startDate ?? DateTime.now());
+        ? (_viewModel.startDate ?? DateTime.now())
+        : (_viewModel.endDate ?? _viewModel.startDate ?? DateTime.now());
 
     final DateTime? picked = await showDatePicker(
       context: context,
-
       initialDate: initialDate,
-
       firstDate: DateTime(2000),
-
       lastDate: DateTime.now(),
-
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -415,23 +158,11 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
       return;
     }
 
-    setState(() {
-      if (isStart) {
-        _startDate = picked;
-
-        // Jika end date lebih kecil
-        // dari start date, reset end date.
-        if (_endDate != null && _endDate!.isBefore(picked)) {
-          _endDate = null;
-        }
-      } else {
-        _endDate = picked;
-      }
-
-      _currentPage = 1;
-    });
-
-    _loadHistoricalData(showLoading: true);
+    if (isStart) {
+      await _viewModel.setStartDate(picked);
+    } else {
+      await _viewModel.setEndDate(picked);
+    }
   }
 
   // ============================================================
@@ -475,12 +206,14 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
   // ============================================================
 
   String _formatCacheTime() {
-    if (_cacheTime == null) {
+    final String? cacheTime = _viewModel.cacheTime;
+
+    if (cacheTime == null) {
       return '-';
     }
 
     try {
-      final DateTime date = DateTime.parse(_cacheTime!).toLocal();
+      final DateTime date = DateTime.parse(cacheTime).toLocal();
 
       final String day = date.day.toString().padLeft(2, '0');
 
@@ -494,7 +227,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
 
       return '$day/$month/$year $hour:$minute';
     } catch (_) {
-      return _cacheTime!;
+      return cacheTime;
     }
   }
 
@@ -549,12 +282,10 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
       body: SafeArea(
         child: RefreshIndicator(
           color: orangeColor,
-
           onRefresh: _refreshData,
 
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-
             padding: const EdgeInsets.all(20),
 
             child: Column(
@@ -605,7 +336,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
                 // ==================================================
                 // STATUS
                 // ==================================================
-                if (_historicalData.isNotEmpty) _buildStatusCard(),
+                if (_viewModel.historicalData.isNotEmpty) _buildStatusCard(),
 
                 const SizedBox(height: 16),
 
@@ -619,12 +350,12 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
                 // ==================================================
                 // ERROR
                 // ==================================================
-                if (_errorMessage != null) _buildErrorCard(),
+                if (_viewModel.errorMessage != null) _buildErrorCard(),
 
                 // ==================================================
                 // LOADING
                 // ==================================================
-                if (_isLoading && _historicalData.isEmpty)
+                if (_viewModel.isLoading && _viewModel.historicalData.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
                     child: Center(
@@ -635,12 +366,13 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
                 // ==================================================
                 // TABLE
                 // ==================================================
-                if (_historicalData.isNotEmpty) _buildDataTable(),
+                if (_viewModel.historicalData.isNotEmpty) _buildDataTable(),
 
                 // ==================================================
                 // PAGINATION
                 // ==================================================
-                if (_historicalData.isNotEmpty && _totalPages > 1)
+                if (_viewModel.historicalData.isNotEmpty &&
+                    _viewModel.totalPages > 1)
                   _buildPagination(),
 
                 const SizedBox(height: 30),
@@ -671,11 +403,13 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
       padding: const EdgeInsets.all(16),
 
       decoration: BoxDecoration(
-        color: _isFromCache ? lightOrange : Colors.white,
+        color: _viewModel.isFromCache ? lightOrange : Colors.white,
 
         borderRadius: BorderRadius.circular(16),
 
-        border: Border.all(color: _isFromCache ? orangeColor : Colors.green),
+        border: Border.all(
+          color: _viewModel.isFromCache ? orangeColor : Colors.green,
+        ),
       ),
 
       child: Row(
@@ -683,13 +417,20 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
           Container(
             width: 42,
             height: 42,
+
             decoration: BoxDecoration(
-              color: _isFromCache ? orangeColor : Colors.green,
+              color: _viewModel.isFromCache ? orangeColor : Colors.green,
+
               shape: BoxShape.circle,
             ),
+
             child: Icon(
-              _isFromCache ? Icons.cloud_off_rounded : Icons.cloud_done_rounded,
+              _viewModel.isFromCache
+                  ? Icons.cloud_off_rounded
+                  : Icons.cloud_done_rounded,
+
               color: Colors.white,
+
               size: 22,
             ),
           ),
@@ -699,30 +440,37 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+
               children: [
                 Text(
-                  _isFromCache ? 'Offline' : 'Online',
+                  _viewModel.isFromCache ? 'Offline' : 'Online',
+
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: _isFromCache ? orangeColor : Colors.green,
+                    color: _viewModel.isFromCache ? orangeColor : Colors.green,
                   ),
                 ),
 
                 const SizedBox(height: 3),
 
                 Text(
-                  _isFromCache
-                      ? 'Menampilkan cache $_selectedCategory'
-                      : 'Data $_selectedCategory terbaru',
+                  _viewModel.isFromCache
+                      ? 'Menampilkan cache '
+                            '${_viewModel.selectedCategory}'
+                      : 'Data '
+                            '${_viewModel.selectedCategory} terbaru',
+
                   style: const TextStyle(fontSize: 13, color: Colors.black54),
                 ),
 
-                if (_isFromCache && _cacheTime != null)
+                if (_viewModel.isFromCache && _viewModel.cacheTime != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 3),
+
                     child: Text(
                       'Cache: ${_formatCacheTime()}',
+
                       style: const TextStyle(
                         fontSize: 11,
                         color: Colors.black45,
@@ -807,7 +555,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
                 Expanded(
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
-                      value: _selectedCategory,
+                      value: _viewModel.selectedCategory,
 
                       isExpanded: true,
 
@@ -826,7 +574,9 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
                         color: darkBrown,
                       ),
 
-                      items: _categories.map((String category) {
+                      items: HistoricalGoldViewModel.categories.map((
+                        String category,
+                      ) {
                         return DropdownMenuItem<String>(
                           value: category,
 
@@ -834,7 +584,11 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
                         );
                       }).toList(),
 
-                      onChanged: _isLoading ? null : _onCategoryChanged,
+                      onChanged: _viewModel.isLoading
+                          ? null
+                          : (value) async {
+                              await _viewModel.changeCategory(value);
+                            },
                     ),
                   ),
                 ),
@@ -864,7 +618,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
               Expanded(
                 child: _buildDateButton(
                   label: 'Dari',
-                  date: _startDate,
+                  date: _viewModel.startDate,
                   onTap: () => _selectDate(isStart: true),
                 ),
               ),
@@ -874,7 +628,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
               Expanded(
                 child: _buildDateButton(
                   label: 'Sampai',
-                  date: _endDate,
+                  date: _viewModel.endDate,
                   onTap: () => _selectDate(isStart: false),
                 ),
               ),
@@ -890,7 +644,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
             width: double.infinity,
 
             child: ElevatedButton.icon(
-              onPressed: _isLoading ? null : _refreshData,
+              onPressed: _viewModel.isLoading ? null : _refreshData,
 
               style: ElevatedButton.styleFrom(
                 backgroundColor: orangeColor,
@@ -948,6 +702,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
           children: [
             Text(
               label,
+
               style: const TextStyle(fontSize: 11, color: Colors.black54),
             ),
 
@@ -966,6 +721,7 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
                 Expanded(
                   child: Text(
                     _formatDate(date),
+
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -1009,7 +765,8 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
 
           Expanded(
             child: Text(
-              _errorMessage!,
+              _viewModel.errorMessage!,
+
               style: TextStyle(
                 color: Colors.red.shade700,
                 fontSize: 13,
@@ -1062,7 +819,8 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
 
                 Expanded(
                   child: Text(
-                    _selectedCategory,
+                    _viewModel.selectedCategory,
+
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -1109,18 +867,18 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
                 DataColumn(label: Text('Close')),
               ],
 
-              rows: _historicalData.map((Map<String, String> item) {
+              rows: _viewModel.historicalData.map((HistoricalGoldModel item) {
                 return DataRow(
                   cells: [
-                    DataCell(Text(item['date'] ?? '-')),
+                    DataCell(Text(item.date)),
 
-                    DataCell(Text(item['open'] ?? '-')),
+                    DataCell(Text(item.open)),
 
-                    DataCell(Text(item['high'] ?? '-')),
+                    DataCell(Text(item.high)),
 
-                    DataCell(Text(item['low'] ?? '-')),
+                    DataCell(Text(item.low)),
 
-                    DataCell(Text(item['close'] ?? '-')),
+                    DataCell(Text(item.close)),
                   ],
                 );
               }).toList(),
@@ -1147,10 +905,14 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
           // PREVIOUS
           // ======================================================
           IconButton(
-            onPressed: _currentPage > 1 ? _previousPage : null,
+            onPressed: _viewModel.currentPage > 1
+                ? () async {
+                    await _viewModel.previousPage();
+                  }
+                : null,
 
             style: IconButton.styleFrom(
-              backgroundColor: _currentPage > 1
+              backgroundColor: _viewModel.currentPage > 1
                   ? orangeColor
                   : Colors.grey.shade300,
 
@@ -1163,8 +925,9 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
           const SizedBox(width: 16),
 
           Text(
-            'Halaman $_currentPage '
-            'dari $_totalPages',
+            'Halaman ${_viewModel.currentPage} '
+            'dari ${_viewModel.totalPages}',
+
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: darkBrown,
@@ -1177,10 +940,14 @@ class _HistoricalGoldScreenState extends State<HistoricalGoldScreen>
           // NEXT
           // ======================================================
           IconButton(
-            onPressed: _currentPage < _totalPages ? _nextPage : null,
+            onPressed: _viewModel.currentPage < _viewModel.totalPages
+                ? () async {
+                    await _viewModel.nextPage();
+                  }
+                : null,
 
             style: IconButton.styleFrom(
-              backgroundColor: _currentPage < _totalPages
+              backgroundColor: _viewModel.currentPage < _viewModel.totalPages
                   ? orangeColor
                   : Colors.grey.shade300,
 
