@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../services/live_quote_service.dart';
 import '../../viewmodels/history_viewmodel.dart';
 import '../../viewmodels/pivot_calculator_viewmodel.dart';
 
@@ -51,6 +52,22 @@ class _PivotCalculatorViewState extends State<_PivotCalculatorView> {
 
   final TextEditingController _closeController = TextEditingController();
 
+  // ============================================================
+  // LOAD LIVE OPEN XUL10
+  // ============================================================
+
+  Future<void> _loadLiveOpenPrice() async {
+    final double? openPrice = await LiveQuoteService.getOpenPrice('XUL10');
+
+    if (!mounted) {
+      return;
+    }
+
+    if (openPrice != null) {
+      _openController.text = openPrice.toString();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +82,8 @@ class _PivotCalculatorViewState extends State<_PivotCalculatorView> {
       viewModel.addListener(_updateHistoricalControllers);
 
       _updateHistoricalControllers();
+
+      _loadLiveOpenPrice();
     });
   }
 

@@ -357,14 +357,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
       resultLabel: 'Pivot Point Emas (LGD)',
       resultValue: pp.toStringAsFixed(2),
       details: [
-        _DetailItem(
-          label: 'High / Low / Close',
-          value:
-              '${_formatNumber(high)} / '
-              '${_formatNumber(low)} / '
-              '${_formatNumber(close)}',
-        ),
-      ],
+  _DetailItem(
+    label: 'High / Low / Close',
+    value:
+        '${high.toStringAsFixed(2)} / '
+        '${low.toStringAsFixed(2)} / '
+        '${close.toStringAsFixed(2)}',
+  ),
+],
       onTap: () {
         Navigator.push(
           context,
