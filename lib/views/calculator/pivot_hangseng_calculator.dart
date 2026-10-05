@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/pivot_hangseng_calculator_model.dart';
 import '../../viewmodels/history_viewmodel.dart';
 import '../../viewmodels/pivot_hangseng_calculator_viewmodel.dart';
+import '../../services/live_quote_service.dart';
 import 'pivot_result.dart';
 
 class PivotHangsengCalculator extends StatelessWidget {
@@ -58,6 +59,22 @@ class _PivotHangsengCalculatorViewState
   final TextEditingController _closeController = TextEditingController();
 
   // ============================================================
+  // LOAD LIVE OPEN HKK50_BBJ
+  // ============================================================
+
+  Future<void> _loadLiveOpenPrice() async {
+    final double? openPrice = await LiveQuoteService.getOpenPrice('HKK50_BBJ');
+
+    if (!mounted) {
+      return;
+    }
+
+    if (openPrice != null) {
+      _openController.text = openPrice.toString();
+    }
+  }
+
+  // ============================================================
   // INIT
   // ============================================================
 
@@ -67,6 +84,7 @@ class _PivotHangsengCalculatorViewState
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadLatestHistoricalData();
+      _loadLiveOpenPrice();
     });
   }
 

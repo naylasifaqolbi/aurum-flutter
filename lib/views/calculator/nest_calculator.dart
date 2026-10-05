@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/nest_calculator_model.dart';
 import '../../viewmodels/history_viewmodel.dart';
 import '../../viewmodels/nest_calculator_viewmodel.dart';
+import '../../services/live_quote_service.dart';
 import 'nest_result.dart';
 
 class NestCalculatorScreen extends StatelessWidget {
@@ -48,6 +49,22 @@ class _NestCalculatorViewState extends State<_NestCalculatorView> {
   final TextEditingController _closeController = TextEditingController();
 
   // ============================================================
+  // LOAD LIVE OPEN XUL10
+  // ============================================================
+
+  Future<void> _loadLiveOpenPrice() async {
+    final double? openPrice = await LiveQuoteService.getOpenPrice('XUL10');
+
+    if (!mounted) {
+      return;
+    }
+
+    if (openPrice != null) {
+      _openController.text = openPrice.toString();
+    }
+  }
+
+  // ============================================================
   // INIT
   // ============================================================
 
@@ -57,6 +74,7 @@ class _NestCalculatorViewState extends State<_NestCalculatorView> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadLatestHistoricalData();
+      _loadLiveOpenPrice();
     });
   }
 
