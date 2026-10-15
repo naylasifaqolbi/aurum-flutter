@@ -218,9 +218,8 @@ class NestFormulaScreen extends StatelessWidget {
           const SizedBox(height: 10),
 
           const Text(
-            'Metode sederhana untuk menentukan indikasi '
-            'BUY atau SELL berdasarkan perbandingan '
-            'harga Open dan Close.',
+            'Konsep Follow The Trend yang '
+            'mengacu pada harga penutupan (close) ',
             style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.6),
           ),
         ],
