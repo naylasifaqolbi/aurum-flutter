@@ -184,7 +184,6 @@ class _PivotResultContent extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
@@ -195,7 +194,6 @@ class _PivotResultContent extends StatelessWidget {
             size: 25,
           ),
         ),
-
         title: Text(
           resultTitle,
           style: const TextStyle(
@@ -204,7 +202,6 @@ class _PivotResultContent extends StatelessWidget {
             color: orangeColor,
           ),
         ),
-
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
@@ -213,7 +210,7 @@ class _PivotResultContent extends StatelessWidget {
 
       // ==========================================================
       // BODY
-      // ==========================================================
+      // ==============================================================
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -234,6 +231,13 @@ class _PivotResultContent extends StatelessWidget {
               const SizedBox(height: 25),
 
               _buildIndicationCard(model),
+
+              const SizedBox(height: 12),
+
+              // ==================================================
+              // DISCLAIMER CARD
+              // ==================================================
+              _buildDisclaimerCard(),
 
               const SizedBox(height: 20),
 
@@ -755,7 +759,7 @@ class _PivotResultContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          left: BorderSide(color: greenColor, width: 3),
+          left: const BorderSide(color: greenColor, width: 3),
           top: const BorderSide(color: Color(0xFFE5E5E5), width: 0.7),
           bottom: const BorderSide(color: Color(0xFFE5E5E5), width: 0.7),
         ),
@@ -845,7 +849,7 @@ class _PivotResultContent extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          left: BorderSide(color: redColor, width: 3),
+          left: const BorderSide(color: redColor, width: 3),
           top: const BorderSide(color: Color(0xFFE5E5E5), width: 0.7),
           bottom: const BorderSide(color: Color(0xFFE5E5E5), width: 0.7),
         ),
@@ -1011,6 +1015,10 @@ class _PivotResultContent extends StatelessWidget {
           : 'Open berada di atas Pivot Point Emas.';
     }
 
+    // Terjemahan hanya untuk tampilan.
+    // Logika internal tetap menggunakan nilai BUY/SELL.
+    final String displayedIndication = isBuy ? 'Beli' : 'Jual';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1030,7 +1038,7 @@ class _PivotResultContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'INDIKASI',
+            'AKSI',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
@@ -1073,7 +1081,7 @@ class _PivotResultContent extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        model.indication,
+                        displayedIndication,
                         style: TextStyle(
                           fontSize: 19,
                           fontWeight: FontWeight.bold,
@@ -1104,6 +1112,74 @@ class _PivotResultContent extends StatelessWidget {
             'Open: ${_formatNumber(model.open)}  •  '
             'Pivot Point: ${_formatNumber(model.pp)}',
             style: const TextStyle(fontSize: 12, color: Color(0xFF888888)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==============================================================
+  // DISCLAIMER CARD
+  // ==============================================================
+
+  Widget _buildDisclaimerCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: redColor.withOpacity(0.45), width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: redColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.info_outline_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+
+          const SizedBox(width: 11),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Disclaimer',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFB3261E),
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                const Text(
+                  'Aksi yang ditampilkan merupakan indikasi '
+                  'berdasarkan hasil perhitungan Pivot Point. '
+                  'Kondisi pasar dapat berubah sewaktu-waktu, '
+                  'sehingga lakukan analisis fundamental dan teknikal '
+                  'lebih lanjut dan pertimbangkan risiko sebelum mengambil '
+                  'keputusan transaksi.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6D3030),
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
