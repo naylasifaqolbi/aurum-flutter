@@ -214,10 +214,10 @@ class PivotFormulaScreen extends StatelessWidget {
           SizedBox(height: 10),
 
           Text(
-            'Metode perhitungan untuk menentukan '
-            'level Pivot Point, Resistance, dan '
-            'Support berdasarkan data High, '
-            'Low, dan Close.',
+            'Harga wajar atau harga pasaran '
+            'untuk menentukan aksi beli dan jual '
+            'yang mengacu pada harga penutupan '
+            '(close).',
             style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.6),
           ),
         ],
