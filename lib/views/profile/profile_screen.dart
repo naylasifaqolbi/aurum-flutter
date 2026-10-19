@@ -6,6 +6,7 @@ import 'edit_profile_screen.dart';
 import 'app_settings_screen.dart';
 import 'help_screen.dart';
 import 'account_security_screen.dart';
+import 'customer_service_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -337,6 +338,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const HelpScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              // ==========================================
+              // BANTUAN / PELAYANAN PELANGGAN
+              // ==========================================
+              const Text(
+                'BANTUAN',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFAAAAAA),
+                  letterSpacing: 0.5,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Container(
+                width: double.infinity,
+
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+
+                child: _buildMenuItem(
+                  icon: Icons.support_agent_rounded,
+                  title: 'Pelayanan Pelanggan',
+                  subtitle: 'Panduan penggunaan dan pusat bantuan',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CustomerServiceScreen(),
                       ),
                     );
                   },
