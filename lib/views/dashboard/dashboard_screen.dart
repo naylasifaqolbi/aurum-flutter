@@ -6,6 +6,7 @@ import 'physical_gold_formula_screen.dart';
 import 'pivot_formula_screen.dart';
 import 'nest_formula_screen.dart';
 import 'historical_gold_screen.dart';
+import 'company_profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   // ============================================================
@@ -66,12 +67,6 @@ class DashboardScreenState extends State<DashboardScreen> {
   // ============================================================
   // LOAD PROFILE
   // ============================================================
-  //
-  // Tetap dipertahankan karena MainNavigationScreen
-  // memanggil DashboardScreenState.loadProfile().
-  //
-  // Sekarang proses sebenarnya sudah berada di ViewModel.
-  //
 
   Future<void> loadProfile() async {
     await _viewModel.loadProfile();
@@ -141,12 +136,10 @@ class DashboardScreenState extends State<DashboardScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
 
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
               // ==================================================
               // WELCOME
@@ -205,6 +198,13 @@ class DashboardScreenState extends State<DashboardScreen> {
               // KELOLA DAN ANALISIS
               // ==================================================
               _buildAboutAurumCard(context),
+
+              // ==================================================
+              // CARD PROFIL PERUSAHAAN
+              // ==================================================
+              const SizedBox(height: 16),
+
+              _buildCompanyProfileCard(context),
 
               const SizedBox(height: 34),
 
@@ -313,25 +313,18 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildGoldPriceCard(BuildContext context) {
     final String latestDate = _viewModel.latestGoldData.date;
-
     final String latestOpen = _viewModel.latestGoldData.open;
-
     final String latestHigh = _viewModel.latestGoldData.high;
-
     final String latestLow = _viewModel.latestGoldData.low;
-
     final String latestClose = _viewModel.latestGoldData.close;
 
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.all(20),
 
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(20),
-
         border: Border.all(color: const Color(0xFFFFE0C2), width: 1),
 
         boxShadow: [
@@ -345,14 +338,12 @@ class DashboardScreenState extends State<DashboardScreen> {
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           // ======================================================
           // LGD DAILY HEADER
           // ======================================================
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
               Container(
                 width: 46,
@@ -375,7 +366,6 @@ class DashboardScreenState extends State<DashboardScreen> {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
                   children: [
                     const Text(
                       'LGD Daily',
@@ -484,20 +474,16 @@ class DashboardScreenState extends State<DashboardScreen> {
 
             child: Container(
               width: double.infinity,
-
               padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 15),
 
               decoration: BoxDecoration(
                 color: const Color(0xFFFFF3E7),
-
                 borderRadius: BorderRadius.circular(12),
-
                 border: Border.all(color: const Color(0xFFFFDFC0)),
               ),
 
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-
                 children: const [
                   Text(
                     'Lihat Historical Data',
@@ -537,9 +523,7 @@ class DashboardScreenState extends State<DashboardScreen> {
       final DateTime parsedDate = DateTime.parse(date);
 
       final String day = parsedDate.day.toString().padLeft(2, '0');
-
       final String month = parsedDate.month.toString().padLeft(2, '0');
-
       final String year = parsedDate.year.toString();
 
       return '$day/$month/$year';
@@ -559,7 +543,6 @@ class DashboardScreenState extends State<DashboardScreen> {
   Widget _buildPriceItem({required String label, required String value}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-
       children: [
         Text(
           label,
@@ -592,14 +575,11 @@ class DashboardScreenState extends State<DashboardScreen> {
   Widget _buildAboutAurumCard(BuildContext context) {
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.all(22),
 
       decoration: BoxDecoration(
         color: const Color(0xFFFFEAD6),
-
         borderRadius: BorderRadius.circular(22),
-
         border: Border.all(color: const Color(0xFFFFD4AD), width: 1),
 
         boxShadow: [
@@ -613,7 +593,6 @@ class DashboardScreenState extends State<DashboardScreen> {
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           // ======================================================
           // TITLE
@@ -674,7 +653,6 @@ class DashboardScreenState extends State<DashboardScreen> {
 
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-
                 children: const [
                   Text(
                     'Mulai Menghitung Sekarang',
@@ -689,6 +667,129 @@ class DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ============================================================
+  // COMPANY PROFILE CARD
+  // ============================================================
+
+  Widget _buildCompanyProfileCard(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const CompanyProfileScreen(),
+            ),
+          );
+        },
+
+        child: Ink(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+
+            border: Border.all(color: const Color(0xFFFFE0C2), width: 1),
+
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+
+          child: Row(
+            children: [
+              // ==================================================
+              // ICON PERUSAHAAN
+              // ==================================================
+              Container(
+                width: 58,
+                height: 58,
+
+                decoration: BoxDecoration(
+                  color: lightOrange,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+
+                child: const Icon(
+                  Icons.business_rounded,
+                  color: orangeColor,
+                  size: 32,
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // ==================================================
+              // INFORMASI CARD
+              // ==================================================
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Profil Perusahaan',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: darkBrown,
+                      ),
+                    ),
+
+                    SizedBox(height: 6),
+
+                    Text(
+                      'Kenali PT Equityworld Futures '
+                      'dan informasi mengenai perusahaan.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                        height: 1.5,
+                      ),
+                    ),
+
+                    SizedBox(height: 10),
+
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Selengkapnya',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: orangeColor,
+                          ),
+                        ),
+
+                        SizedBox(width: 6),
+
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: orangeColor,
+                          size: 17,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -709,14 +810,11 @@ class DashboardScreenState extends State<DashboardScreen> {
 
       child: Container(
         width: double.infinity,
-
         padding: const EdgeInsets.all(20),
 
         decoration: BoxDecoration(
           color: Colors.white,
-
           borderRadius: BorderRadius.circular(20),
-
           border: Border.all(color: const Color(0xFFFFE0C2), width: 1),
 
           boxShadow: [
@@ -730,7 +828,6 @@ class DashboardScreenState extends State<DashboardScreen> {
 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
             // ======================================================
             // ICON + TITLE
@@ -785,7 +882,6 @@ class DashboardScreenState extends State<DashboardScreen> {
             // ======================================================
             Row(
               mainAxisSize: MainAxisSize.min,
-
               children: const [
                 Icon(Icons.functions_rounded, size: 17, color: orangeColor),
 
