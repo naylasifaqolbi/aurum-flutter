@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../viewmodels/history_viewmodel.dart';
 import '../../viewmodels/physical_gold_calculator_viewmodel.dart';
+import '../../services/exchange_rate_service.dart';
 import 'physical_gold_result.dart';
 
 class PhysicalGoldCalculator extends StatelessWidget {
@@ -52,6 +53,11 @@ class _PhysicalGoldCalculatorContentState
 
   final TextEditingController _hargaJualController = TextEditingController();
 
+  final ExchangeRateService _exchangeRateService = ExchangeRateService();
+
+  bool _isLoadingKurs = false;
+  String? _kursError;
+
   // ==================================================
   // FORMAT ANGKA RIBUAN
   // ==================================================
@@ -77,6 +83,48 @@ class _PhysicalGoldCalculatorContentState
           selection: TextSelection.collapsed(offset: formatted.length),
         );
       });
+
+  Future<void> _ambilKursOtomatis() async {
+    setState(() {
+      _isLoadingKurs = true;
+      _kursError = null;
+    });
+
+    try {
+      final kurs = await _exchangeRateService.getUsdToIdr();
+
+      if (!mounted) return;
+
+      final kursBulat = kurs.round().toString();
+      final kursFormatted = kursBulat.replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (match) => '.',
+      );
+
+      setState(() {
+        _kursController.text = kursFormatted;
+        _kursError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _kursError = 'Gagal mengambil kurs. Periksa koneksi internet.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingKurs = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ambilKursOtomatis();
+  }
 
   @override
   void dispose() {
@@ -307,6 +355,31 @@ class _PhysicalGoldCalculatorContentState
                   errorMessage: 'Kurs wajib diisi',
                   inputFormatters: [_thousandsFormatter],
                 ),
+
+                if (_isLoadingKurs)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Mengambil kurs terbaru...',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF777777)),
+                    ),
+                  )
+                else if (_kursError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _kursError!,
+                      style: const TextStyle(fontSize: 12, color: Colors.red),
+                    ),
+                  )
+                else
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Kurs otomatis · Nilai dapat diedit manual',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF777777)),
+                    ),
+                  ),
 
                 const SizedBox(height: 20),
 
