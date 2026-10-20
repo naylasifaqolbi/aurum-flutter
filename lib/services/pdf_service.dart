@@ -7,6 +7,58 @@ import '../models/history_model.dart';
 
 class PdfService {
   // ============================================================
+  // IDENTITAS EWF
+  // ============================================================
+
+  pw.Widget _buildCompanyHeader(pw.MemoryImage logo) {
+    return pw.Column(
+      children: [
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            pw.Image(logo, width: 75, height: 65, fit: pw.BoxFit.contain),
+            pw.SizedBox(width: 15),
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'PT EQUITYWORLD FUTURES',
+                    style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 3),
+                  pw.Text(
+                    'SURABAYA',
+                    style: pw.TextStyle(
+                      fontSize: 12,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 4),
+                  pw.Text(
+                    '[Trillium Office & Residence, Lt.2, Jl. Pemuda No. 108-116, Surabaya]',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 10),
+        pw.Container(
+          width: double.infinity,
+          height: 2,
+          color: PdfColors.orange,
+        ),
+        pw.SizedBox(height: 18),
+      ],
+    );
+  }
+
+  // ============================================================
   // PDF EMAS FISIK
   // ============================================================
 
@@ -60,16 +112,7 @@ class PdfService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text(
-                    'AURUM',
-                    style: pw.TextStyle(
-                      fontSize: 24,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.orange,
-                    ),
-                  ),
-
-                  pw.SizedBox(height: 4),
+                  _buildCompanyHeader(logo),
 
                   pw.Text(
                     'Hasil Perhitungan Emas Fisik',
@@ -272,16 +315,7 @@ class PdfService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text(
-                    'AURUM',
-                    style: pw.TextStyle(
-                      fontSize: 24,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.orange,
-                    ),
-                  ),
-
-                  pw.SizedBox(height: 4),
+                  _buildCompanyHeader(logo),
 
                   pw.Text(
                     'Hasil Perhitungan Pivot Emas',
@@ -339,7 +373,7 @@ class PdfService {
                   pw.SizedBox(height: 8),
 
                   // ==================================================
-                  // PIVOT POINT + INDIKASI
+                  // PIVOT POINT + AKSI
                   // ==================================================
                   pw.Container(
                     width: double.infinity,
@@ -362,7 +396,7 @@ class PdfService {
                               pw.SizedBox(height: 3),
 
                               pw.Text(
-                                'INDIKASI: $indication',
+                                'AKSI: $indication',
                                 style: pw.TextStyle(
                                   fontSize: 10,
                                   fontWeight: pw.FontWeight.bold,
@@ -402,25 +436,49 @@ class PdfService {
 
                   pw.SizedBox(height: 8),
 
-                  _buildRow('R4', r4.toStringAsFixed(2)),
-                  _buildRow('Midpoint R4-R3', midpointR4R3.toStringAsFixed(2)),
-                  _buildRow('R3', r3.toStringAsFixed(2)),
-                  _buildRow('Midpoint R3-R2', midpointR3R2.toStringAsFixed(2)),
-                  _buildRow('R2', r2.toStringAsFixed(2)),
-                  _buildRow('Midpoint R2-R1', midpointR2R1.toStringAsFixed(2)),
-                  _buildRow('R1', r1.toStringAsFixed(2)),
-                  _buildRow('Midpoint PP-R1', midpointPPR1.toStringAsFixed(2)),
+                  _buildPivotRow('R4', r4.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint R4-R3',
+                    midpointR4R3.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('R3', r3.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint R3-R2',
+                    midpointR3R2.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('R2', r2.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint R2-R1',
+                    midpointR2R1.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('R1', r1.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint PP-R1',
+                    midpointPPR1.toStringAsFixed(2),
+                  ),
 
-                  _buildRow('PP', pp.toStringAsFixed(2)),
-                  _buildRow('Midpoint PP-S1', midpointPPS1.toStringAsFixed(2)),
+                  _buildPivotRow('PP', pp.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint PP-S1',
+                    midpointPPS1.toStringAsFixed(2),
+                  ),
 
-                  _buildRow('S1', s1.toStringAsFixed(2)),
-                  _buildRow('Midpoint S1-S2', midpointS1S2.toStringAsFixed(2)),
-                  _buildRow('S2', s2.toStringAsFixed(2)),
-                  _buildRow('Midpoint S2-S3', midpointS2S3.toStringAsFixed(2)),
-                  _buildRow('S3', s3.toStringAsFixed(2)),
-                  _buildRow('Midpoint S3-S4', midpointS3S4.toStringAsFixed(2)),
-                  _buildRow('S4', s4.toStringAsFixed(2)),
+                  _buildPivotRow('S1', s1.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint S1-S2',
+                    midpointS1S2.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('S2', s2.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint S2-S3',
+                    midpointS2S3.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('S3', s3.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint S3-S4',
+                    midpointS3S4.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('S4', s4.toStringAsFixed(2)),
 
                   pw.Spacer(),
 
@@ -497,16 +555,7 @@ class PdfService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text(
-                    'AURUM',
-                    style: pw.TextStyle(
-                      fontSize: 24,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.orange,
-                    ),
-                  ),
-
-                  pw.SizedBox(height: 4),
+                  _buildCompanyHeader(logo),
 
                   pw.Text(
                     'Hasil Perhitungan Nest',
@@ -551,7 +600,7 @@ class PdfService {
                   pw.SizedBox(height: 15),
 
                   // ==================================================
-                  // INDIKASI
+                  // AKSI
                   // ==================================================
                   pw.Container(
                     width: double.infinity,
@@ -568,7 +617,7 @@ class PdfService {
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
                         pw.Text(
-                          'INDIKASI',
+                          'AKSI',
                           style: const pw.TextStyle(
                             fontSize: 10,
                             color: PdfColors.grey700,
@@ -667,6 +716,26 @@ class PdfService {
   }
 
   // ============================================================
+  // HELPER BARIS PIVOT (JARAK LEBIH RAPAT)
+  // ============================================================
+  pw.Widget _buildPivotRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      child: pw.Row(
+        children: [
+          pw.Expanded(
+            child: pw.Text(label, style: const pw.TextStyle(fontSize: 11)),
+          ),
+          pw.Text(
+            value,
+            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
   // PDF PIVOT HANG SENG
   // ============================================================
 
@@ -740,16 +809,7 @@ class PdfService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text(
-                    'AURUM',
-                    style: pw.TextStyle(
-                      fontSize: 24,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.orange,
-                    ),
-                  ),
-
-                  pw.SizedBox(height: 4),
+                  _buildCompanyHeader(logo),
 
                   pw.Text(
                     'Hasil Perhitungan Pivot Hang Seng',
@@ -807,7 +867,7 @@ class PdfService {
                   pw.SizedBox(height: 8),
 
                   // ==================================================
-                  // PIVOT POINT + INDIKASI
+                  // PIVOT POINT + AKSI
                   // ==================================================
                   pw.Container(
                     width: double.infinity,
@@ -830,7 +890,7 @@ class PdfService {
                               pw.SizedBox(height: 3),
 
                               pw.Text(
-                                'INDIKASI: $indication',
+                                'AKSI: $indication',
                                 style: pw.TextStyle(
                                   fontSize: 10,
                                   fontWeight: pw.FontWeight.bold,
@@ -870,25 +930,45 @@ class PdfService {
 
                   pw.SizedBox(height: 8),
 
-                  _buildRow('R4', r4.toStringAsFixed(2)),
-                  _buildRow('Midpoint R4-R3', midpointR4R3.toStringAsFixed(2)),
-                  _buildRow('R3', r3.toStringAsFixed(2)),
-                  _buildRow('Midpoint R3-R2', midpointR3R2.toStringAsFixed(2)),
-                  _buildRow('R2', r2.toStringAsFixed(2)),
-                  _buildRow('Midpoint R2-R1', midpointR2R1.toStringAsFixed(2)),
-                  _buildRow('R1', r1.toStringAsFixed(2)),
-                  _buildRow('Midpoint PP-R1', midpointPPR1.toStringAsFixed(2)),
+                  _buildPivotRow('R4', r4.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint R4-R3',
+                    midpointR4R3.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('R3', r3.toStringAsFixed(2)),
+                  _buildPivotRow('R2', r2.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint R2-R1',
+                    midpointR2R1.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('R1', r1.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint PP-R1',
+                    midpointPPR1.toStringAsFixed(2),
+                  ),
 
-                  _buildRow('PP', pp.toStringAsFixed(2)),
-                  _buildRow('Midpoint PP-S1', midpointPPS1.toStringAsFixed(2)),
+                  _buildPivotRow('PP', pp.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint PP-S1',
+                    midpointPPS1.toStringAsFixed(2),
+                  ),
 
-                  _buildRow('S1', s1.toStringAsFixed(2)),
-                  _buildRow('Midpoint S1-S2', midpointS1S2.toStringAsFixed(2)),
-                  _buildRow('S2', s2.toStringAsFixed(2)),
-                  _buildRow('Midpoint S2-S3', midpointS2S3.toStringAsFixed(2)),
-                  _buildRow('S3', s3.toStringAsFixed(2)),
-                  _buildRow('Midpoint S3-S4', midpointS3S4.toStringAsFixed(2)),
-                  _buildRow('S4', s4.toStringAsFixed(2)),
+                  _buildPivotRow('S1', s1.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint S1-S2',
+                    midpointS1S2.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('S2', s2.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint S2-S3',
+                    midpointS2S3.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('S3', s3.toStringAsFixed(2)),
+                  _buildPivotRow(
+                    'Midpoint S3-S4',
+                    midpointS3S4.toStringAsFixed(2),
+                  ),
+                  _buildPivotRow('S4', s4.toStringAsFixed(2)),
 
                   pw.Spacer(),
 
