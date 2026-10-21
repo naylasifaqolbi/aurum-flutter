@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/history_viewmodel.dart';
 import '../../viewmodels/physical_gold_calculator_viewmodel.dart';
 import '../../services/exchange_rate_service.dart';
+import '../dashboard/physical_gold_formula_screen.dart';
 import 'physical_gold_result.dart';
 
 class PhysicalGoldCalculator extends StatelessWidget {
@@ -320,7 +321,49 @@ class _PhysicalGoldCalculatorContentState
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
+
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const PhysicalGoldFormulaScreen(),
+                        ),
+                      );
+                    },
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.functions,
+                          size: 19,
+                          color: Color(0xFFF28C28),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Rumus',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFF28C28),
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 21,
+                          color: Color(0xFFF28C28),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
 
                 // ==========================================
                 // MODAL
