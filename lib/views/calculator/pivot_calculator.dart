@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../services/live_quote_service.dart';
 import '../../viewmodels/history_viewmodel.dart';
 import '../../viewmodels/pivot_calculator_viewmodel.dart';
+import '../dashboard/pivot_formula_screen.dart';
 
 import 'pivot_result.dart';
 
@@ -332,7 +333,48 @@ class _PivotCalculatorViewState extends State<_PivotCalculatorView> {
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
+
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PivotFormulaScreen(),
+                        ),
+                      );
+                    },
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.functions,
+                          size: 19,
+                          color: Color(0xFFF28C28),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Rumus',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFF28C28),
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 21,
+                          color: Color(0xFFF28C28),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
 
                 // ==================================================
                 // OPEN

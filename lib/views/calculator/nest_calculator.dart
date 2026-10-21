@@ -6,6 +6,7 @@ import '../../models/nest_calculator_model.dart';
 import '../../viewmodels/history_viewmodel.dart';
 import '../../viewmodels/nest_calculator_viewmodel.dart';
 import '../../services/live_quote_service.dart';
+import '../dashboard/nest_formula_screen.dart';
 import 'nest_result.dart';
 
 class NestCalculatorScreen extends StatelessWidget {
@@ -265,7 +266,48 @@ class _NestCalculatorViewState extends State<_NestCalculatorView> {
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
+
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NestFormulaScreen(),
+                        ),
+                      );
+                    },
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.functions,
+                          size: 19,
+                          color: Color(0xFFF28C28),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Rumus',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFF28C28),
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 21,
+                          color: Color(0xFFF28C28),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
 
                 // ==================================================
                 // OPEN
