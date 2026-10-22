@@ -83,15 +83,16 @@ class NestCalculatorViewModel extends ChangeNotifier {
     // ==========================================================
     // SIMPAN HISTORY
     // ==========================================================
-
-    final bool historySaved = await historyViewModel.saveHistory(
-      calculatorType: 'nest',
-      inputData: {'open': open, 'close': close},
-      resultData: {'indication': indication, 'description': description},
-    );
-
-    if (!historySaved) {
-      return null;
+    try {
+      await historyViewModel
+          .saveHistory(
+            calculatorType: 'nest',
+            inputData: {'open': open, 'close': close},
+            resultData: {'indication': indication, 'description': description},
+          )
+          .timeout(const Duration(seconds: 2));
+    } catch (_) {
+      // Gagal menyimpan riwayat tidak membatalkan hasil hitung.
     }
 
     // ==========================================================

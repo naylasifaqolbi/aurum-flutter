@@ -117,29 +117,31 @@ class PhysicalGoldCalculatorViewModel extends ChangeNotifier {
       // ================================================
       // SIMPAN HISTORY
       // ================================================
-
-      final historySaved = await historyViewModel.saveHistory(
-        calculatorType: 'physical_gold',
-        inputData: {
-          'modal': modal,
-          'kurs': kurs,
-          'harga_beli': hargaBeli,
-          'harga_jual': hargaJual,
-        },
-        resultData: {
-          'toz': toz,
-          'hasil_harga_beli': hasilHargaBeli,
-          'hasil_harga_jual': hasilHargaJual,
-          'selisih_harga': selisihHarga,
-          'jumlah_emas': jumlahEmas,
-          'keuntungan': keuntungan,
-        },
-      );
-
-      if (!historySaved) {
-        return null;
+      try {
+        await historyViewModel
+            .saveHistory(
+              calculatorType: 'physical_gold',
+              inputData: {
+                'modal': modal,
+                'kurs': kurs,
+                'harga_beli': hargaBeli,
+                'harga_jual': hargaJual,
+              },
+              resultData: {
+                'toz': toz,
+                'hasil_harga_beli': hasilHargaBeli,
+                'hasil_harga_jual': hasilHargaJual,
+                'selisih_harga': selisihHarga,
+                'jumlah_emas': jumlahEmas,
+                'keuntungan': keuntungan,
+              },
+            )
+            .timeout(const Duration(seconds: 2));
+      } catch (_) {
+        // Gagal menyimpan riwayat tidak membatalkan hasil hitung.
       }
 
+      // Hasil kalkulasi tetap dikembalikan
       return result;
     } catch (e) {
       _errorMessage = e.toString();
