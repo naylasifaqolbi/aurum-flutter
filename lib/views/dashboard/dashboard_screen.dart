@@ -4,6 +4,7 @@ import '../../viewmodels/dashboard_viewmodel.dart';
 
 import 'historical_gold_screen.dart';
 import 'company_profile_screen.dart';
+import 'news_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   // ============================================================
@@ -202,6 +203,13 @@ class DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 16),
 
               _buildCompanyProfileCard(context),
+
+              // ==================================================
+              // CARD BERITA EKONOMI DAN KEUANGAN
+              // ==================================================
+              const SizedBox(height: 12),
+
+              _buildNewsCard(context),
 
               const SizedBox(height: 34),
             ],
@@ -689,6 +697,125 @@ class DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // NEWS CARD
+  // ============================================================
+
+  Widget _buildNewsCard(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NewsScreen()),
+          );
+        },
+
+        child: Ink(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+
+            border: Border.all(color: const Color(0xFFFFE0C2), width: 1),
+
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+
+          child: Row(
+            children: [
+              // ==================================================
+              // NEWS ICON
+              // ==================================================
+              Container(
+                width: 46,
+                height: 46,
+
+                decoration: BoxDecoration(
+                  color: lightOrange,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+
+                child: const Icon(
+                  Icons.newspaper_rounded,
+                  color: orangeColor,
+                  size: 25,
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // ==================================================
+              // NEWS INFORMATION
+              // ==================================================
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Berita Ekonomi & Keuangan',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: darkBrown,
+                      ),
+                    ),
+
+                    SizedBox(height: 5),
+
+                    Text(
+                      'Berita terbaru Indonesia dan internasional',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.black54,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // ==================================================
+              // ARROW
+              // ==================================================
+              Container(
+                width: 32,
+                height: 32,
+
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+
+                child: const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 18,
+                  color: orangeColor,
                 ),
               ),
             ],
